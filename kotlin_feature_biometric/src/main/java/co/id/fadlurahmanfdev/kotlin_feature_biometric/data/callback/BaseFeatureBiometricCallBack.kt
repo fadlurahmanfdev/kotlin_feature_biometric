@@ -16,8 +16,8 @@ interface BaseFeatureBiometricCallBack {
 
 interface FeatureBiometricSecureCallBack : BaseFeatureBiometricCallBack {
 
-    fun onSuccessAuthenticateEncryptSecureBiometric(cipher: Cipher, encodedIvKey: String) {}
-    fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {}
+    fun onSuccessAuthenticateEncryptSecureBiometric(cipher: Cipher, encodedIvKey: String)
+    fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher)
 }
 
 interface FeatureBiometricCallBack : BaseFeatureBiometricCallBack {
