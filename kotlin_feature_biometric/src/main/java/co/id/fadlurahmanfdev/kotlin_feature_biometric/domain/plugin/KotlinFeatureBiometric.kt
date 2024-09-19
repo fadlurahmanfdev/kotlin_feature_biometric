@@ -415,6 +415,11 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
+    fun encrypt(cipher: Cipher, plainText: String): String {
+        val byteEncryptedPassword = cipher.doFinal(plainText.toByteArray())
+        return Base64.encodeToString(byteEncryptedPassword, Base64.NO_WRAP)
+    }
+
     fun decrypt(cipher: Cipher, encryptedPassword: ByteArray): String {
         return String(cipher.doFinal(encryptedPassword))
     }

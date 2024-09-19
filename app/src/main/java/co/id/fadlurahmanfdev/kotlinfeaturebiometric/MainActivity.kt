@@ -149,10 +149,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             cipher: Cipher,
                             encodedIvKey: String
                         ) {
-                            val encryptedPassword =
-                                cipher.doFinal(plainText.toByteArray())
-                            encodedEncryptedPassword =
-                                Base64.encodeToString(encryptedPassword, Base64.NO_WRAP)
+                            encodedEncryptedPassword = featureBiometric.encrypt(cipher, plainText)
                             this@MainActivity.encodedIvKey = encodedIvKey
                             Log.d(
                                 this@MainActivity::class.java.simpleName,
