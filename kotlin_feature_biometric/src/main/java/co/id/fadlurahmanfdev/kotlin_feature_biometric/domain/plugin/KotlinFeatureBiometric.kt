@@ -20,6 +20,7 @@ import java.util.concurrent.Executor
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.IvParameterSpec
 
 class KotlinFeatureBiometric(private val activity: Activity) {
     companion object {
@@ -140,7 +141,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
     }
 
 
-    fun authenticateSecure(
+    fun authenticateSecureEncrypt(
         alias: String,
         title: String,
         description: String,
@@ -272,5 +273,155 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 )
             }
         }
+    }
+
+    fun authenticateSecureDecrypt(
+        alias: String,
+        encodedIvKey: String,
+        title: String,
+        description: String,
+        negativeText: String,
+        cancellationSignal: CancellationSignal,
+        callBack: FeatureBiometricSecureCallBack,
+    ) {
+        val executor = ContextCompat.getMainExecutor(activity)
+        val cipher = getCipher()
+        val secretKey = getSecretKey(alias)
+        try {
+            val ivKey = Base64.decode(encodedIvKey, Base64.NO_WRAP)
+            val ivSpec = IvParameterSpec(ivKey)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+        } catch (e: Exception) {
+            callBack.onErrorAuthenticate(
+                FeatureBiometricException(
+                    code = "INIT_CIPHER",
+                    message = e.message,
+                )
+            )
+            return
+        }
+
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
+                val biometricPrompt = getBiometricPromptP(
+                    activity = activity,
+                    title = title,
+                    description = description,
+                    negativeText = negativeText,
+                    executor = executor,
+                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
+                )
+
+                biometricPrompt.authenticate(
+                    BiometricPrompt.CryptoObject(cipher),
+                    cancellationSignal,
+                    executor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            val currentCipher = result?.cryptoObject?.cipher
+                            if (currentCipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    exception = FeatureBiometricException(
+                                        code = "CIPHER_MISSING_00",
+                                        message = "Cipher missing"
+                                    )
+                                )
+                                return
+                            }
+                            callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureBiometricException(
+                                    code = "$errorCode",
+                                    message = errString?.toString()
+                                )
+                            )
+                        }
+                    },
+                )
+            }
+
+            else -> {
+                val promptInfo = getAndroidXPromptInfo(
+                    title = title,
+                    description = description,
+                    negativeText = negativeText
+                )
+
+                val biometricPrompt = getAndroidXBiometricPrompt(
+                    fragmentActivity = activity as FragmentActivity,
+                    executor = executor,
+                    callBack = object :
+                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                            super.onAuthenticationSucceeded(result)
+                            val currentCipher = result.cryptoObject?.cipher
+
+                            if (currentCipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    exception = FeatureBiometricException(
+                                        code = "CIPHER_MISSING_00",
+                                        message = "Cipher missing"
+                                    )
+                                )
+                                return
+                            }
+
+                            val encodedIvKey =
+                                Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
+
+                            callBack.onSuccessAuthenticateEncryptSecureBiometric(
+                                cipher = cipher,
+                                encodedIvKey = encodedIvKey
+                            )
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureBiometricException(
+                                    code = "$errorCode",
+                                    message = errString.toString()
+                                )
+                            )
+                        }
+                    }
+                )
+                biometricPrompt.authenticate(
+                    promptInfo,
+                    androidx.biometric.BiometricPrompt.CryptoObject(cipher)
+                )
+            }
+        }
+    }
+
+    fun decrypt(cipher: Cipher, encryptedPassword: ByteArray): String {
+        return String(cipher.doFinal(encryptedPassword))
+    }
+
+    fun decrypt(cipher: Cipher, encryptedPassword: String): String {
+        val decodedPassword =
+            Base64.decode(encryptedPassword, Base64.NO_WRAP)
+        return String(cipher.doFinal(decodedPassword))
     }
 }

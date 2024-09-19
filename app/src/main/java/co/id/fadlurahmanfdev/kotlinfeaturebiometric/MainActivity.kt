@@ -12,6 +12,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricSecureCallBack
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.exception.FeatureBiometricException
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.domain.plugin.KotlinFeatureBiometric
 import co.id.fadlurahmanfdev.kotlinfeaturebiometric.data.FeatureModel
 import co.id.fadlurahmanfdev.kotlinfeaturebiometric.presentation.ListExampleAdapter
@@ -45,12 +46,12 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             desc = "Prompt Encrypt Secure Biometric",
             enum = "PROMPT_ENCRYPT_SECURE_BIOMETRIC"
         ),
-//        FeatureModel(
-//            featureIcon = R.drawable.baseline_developer_mode_24,
-//            title = "Prompt Decrypt Biometric",
-//            desc = "Prompt Decrypt Secure Biometric",
-//            enum = "PROMPT_DECRYPT_SECURE_BIOMETRIC"
-//        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Prompt Decrypt Biometric",
+            desc = "Prompt Decrypt Secure Biometric",
+            enum = "PROMPT_DECRYPT_SECURE_BIOMETRIC"
+        ),
     )
 
     private lateinit var rv: RecyclerView
@@ -137,7 +138,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
             "PROMPT_ENCRYPT_SECURE_BIOMETRIC" -> {
                 cancellationSignal = CancellationSignal()
-                featureBiometric.authenticateSecure(
+                featureBiometric.authenticateSecureEncrypt(
                     title = "Encrypt Biometric",
                     description = "This will encrypt your text into encrypted text",
                     negativeText = "Cancel",
@@ -148,7 +149,6 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             cipher: Cipher,
                             encodedIvKey: String
                         ) {
-                            super.onSuccessAuthenticateEncryptSecureBiometric(cipher, encodedIvKey)
                             val encryptedPassword =
                                 cipher.doFinal(plainText.toByteArray())
                             encodedEncryptedPassword =
@@ -170,30 +170,54 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             toast.show()
                         }
 
-                        override fun onDialogClick(dialogInterface: DialogInterface?, which:Int) {
-                            super.onDialogClick(dialogInterface, which)
-                        }
+                        override fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {}
                     }
                 )
             }
 
-//            "PROMPT_DECRYPT_SECURE_BIOMETRIC" -> {
-//                corePlatformBiometricManager.promptDecrypt(
-//                    title = "Decrypt Biometric",
-//                    description = "This will decrypt your text into encrypted text",
-//                    negativeText = "Cancel",
-//                    encodedIvKey = encodedIvKey,
-//                    callBack = object : CryptoBiometricCallBack {
-//                        override fun onSuccessAuthenticateForDecrypt(cipher: Cipher) {
-//                            super.onSuccessAuthenticateForDecrypt(cipher)
-//                            println("ENCRYPTED PASSWORD: $encodedEncryptedPassword")
-//                            val decodedPassword =
-//                                Base64.decode(encodedEncryptedPassword, Base64.NO_WRAP)
-//                            val plainPassword = String(cipher.doFinal(decodedPassword))
-//                            println("PLAIN PASSWORD: $plainPassword")
-//                        }
-//                    })
-//            }
+            "PROMPT_DECRYPT_SECURE_BIOMETRIC" -> {
+                cancellationSignal = CancellationSignal()
+                featureBiometric.authenticateSecureDecrypt(
+                    alias = "fadlurahmanfdev",
+                    encodedIvKey = encodedIvKey,
+                    title = "Encrypt Biometric",
+                    description = "This will encrypt your text into encrypted text",
+                    negativeText = "Cancel",
+                    cancellationSignal = cancellationSignal,
+                    callBack = object : FeatureBiometricSecureCallBack {
+                        override fun onSuccessAuthenticateEncryptSecureBiometric(
+                            cipher: Cipher,
+                            encodedIvKey: String
+                        ) {}
+
+                        override fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {
+                            val decodedPassword =
+                                Base64.decode(encodedEncryptedPassword, Base64.NO_WRAP)
+                            val plainPassword = featureBiometric.decrypt(cipher, decodedPassword)
+                            Log.d(
+                                this@MainActivity::class.java.simpleName,
+                                "DECRYPTED PASSWORD: $plainPassword"
+                            )
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Successfully Decrypt",
+                                Toast.LENGTH_LONG
+                            )
+                            toast.show()
+                        }
+
+                        override fun onErrorAuthenticate(exception: FeatureBiometricException) {
+                            super.onErrorAuthenticate(exception)
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Error Authentication: ${exception.code}",
+                                Toast.LENGTH_LONG
+                            )
+                            toast.show()
+                        }
+                    }
+                )
+            }
         }
     }
 }
