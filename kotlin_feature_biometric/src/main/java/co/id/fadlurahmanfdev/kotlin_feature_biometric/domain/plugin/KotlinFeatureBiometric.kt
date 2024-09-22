@@ -17,6 +17,7 @@ import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiome
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.exception.FeatureBiometricException
 import java.security.KeyStore
 import java.util.concurrent.Executor
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -421,12 +422,19 @@ class KotlinFeatureBiometric(private val activity: Activity) {
     }
 
     fun decrypt(cipher: Cipher, encryptedPassword: ByteArray): String {
-        return String(cipher.doFinal(encryptedPassword))
+        try {
+            return String(cipher.doFinal(encryptedPassword))
+        } catch (e: BadPaddingException) {
+            throw FeatureBiometricException(
+                code = "BAD_PADDING_EXCEPTION",
+                message = e.message,
+            )
+        }
     }
 
     fun decrypt(cipher: Cipher, encryptedPassword: String): String {
         val decodedPassword =
             Base64.decode(encryptedPassword, Base64.NO_WRAP)
-        return String(cipher.doFinal(decodedPassword))
+        return decrypt(cipher = cipher, encryptedPassword = decodedPassword)
     }
 }

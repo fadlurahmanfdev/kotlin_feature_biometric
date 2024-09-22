@@ -178,7 +178,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     alias = "fadlurahmanfdev",
                     encodedIvKey = encodedIvKey,
                     title = "Encrypt Biometric",
-                    description = "This will encrypt your text into encrypted text",
+                    description = "This will decrypt your text into plain text",
                     negativeText = "Cancel",
                     cancellationSignal = cancellationSignal,
                     callBack = object : FeatureBiometricSecureCallBack {
