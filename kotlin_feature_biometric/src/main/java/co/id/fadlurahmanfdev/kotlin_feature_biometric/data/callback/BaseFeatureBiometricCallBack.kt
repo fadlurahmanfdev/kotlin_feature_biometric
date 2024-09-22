@@ -21,5 +21,5 @@ interface FeatureBiometricSecureCallBack : BaseFeatureBiometricCallBack {
 }
 
 interface FeatureBiometricCallBack : BaseFeatureBiometricCallBack {
-    fun onSuccessAuthenticate() {}
+    fun onSuccessAuthenticate()
 }

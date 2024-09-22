@@ -11,7 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricCallBack
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricSecureCallBack
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.enums.BiometricType
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.exception.FeatureBiometricException
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.domain.plugin.KotlinFeatureBiometric
 import co.id.fadlurahmanfdev.kotlinfeaturebiometric.data.FeatureModel
@@ -22,12 +24,18 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
     lateinit var featureBiometric: KotlinFeatureBiometric
 
     private val features: List<FeatureModel> = listOf<FeatureModel>(
-//        FeatureModel(
-//            featureIcon = R.drawable.baseline_developer_mode_24,
-//            title = "Prompt Weak Biometric",
-//            desc = "Prompt Weak Biometric (Fingerprint & Face Recognition)",
-//            enum = "PROMPT_WEAK_BIOMETRIC"
-//        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "List of Biometric",
+            desc = "List of Biometric Available",
+            enum = "AVAILABLE_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Prompt Weak Biometric",
+            desc = "Prompt Weak Biometric (Fingerprint & Face Recognition)",
+            enum = "PROMPT_WEAK_BIOMETRIC"
+        ),
 //        FeatureModel(
 //            featureIcon = R.drawable.baseline_developer_mode_24,
 //            title = "Prompt Strong Biometric",
@@ -88,21 +96,30 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
     override fun onClicked(item: FeatureModel) {
         when (item.enum) {
-//            "PROMPT_WEAK_BIOMETRIC" -> {
-//                corePlatformBiometricManager.prompt(
-//                    activity = this,
-//                    type = BiometricType.WEAK,
-//                    title = "Authenticate Biometric",
-//                    description = "Authenticate Biometric",
-//                    negativeText = "Cancel",
-//                    callBack = object : BiometricCallBack {
-//                        override fun onSuccessAuthenticate() {
-//                            super.onSuccessAuthenticate()
-//                            println("SUCCESS AUTHENTICATE")
-//                        }
-//                    }
-//                )
-//            }
+            "AVAILABLE_BIOMETRIC" -> {
+                featureBiometric.listOfAvailableBiometric()
+            }
+
+            "PROMPT_WEAK_BIOMETRIC" -> {
+                cancellationSignal = CancellationSignal()
+                featureBiometric.authenticate(
+                    title = "Encrypt Biometric",
+                    description = "This will encrypt your text into encrypted text",
+                    negativeText = "Cancel",
+                    cancellationSignal = cancellationSignal,
+                    type = BiometricType.WEAK,
+                    callBack = object : FeatureBiometricCallBack {
+                        override fun onSuccessAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Successfully Authenticate ${BiometricType.WEAK}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+                    }
+                )
+            }
 //
 //            "PROMPT_STRONG_BIOMETRIC" -> {
 //                corePlatformBiometricManager.prompt(
@@ -162,7 +179,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Successfully Encrypt",
-                                Toast.LENGTH_LONG
+                                Toast.LENGTH_SHORT
                             )
                             toast.show()
                         }
@@ -198,7 +215,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Successfully Decrypt",
-                                Toast.LENGTH_LONG
+                                Toast.LENGTH_SHORT
                             )
                             toast.show()
                         }
@@ -208,7 +225,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Error Authentication: ${exception.code}",
-                                Toast.LENGTH_LONG
+                                Toast.LENGTH_SHORT
                             )
                             toast.show()
                         }
