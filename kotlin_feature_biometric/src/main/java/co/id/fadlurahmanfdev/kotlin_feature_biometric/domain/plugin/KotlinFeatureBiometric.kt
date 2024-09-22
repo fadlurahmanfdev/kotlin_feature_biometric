@@ -1,9 +1,12 @@
 package co.id.fadlurahmanfdev.kotlin_feature_biometric.domain.plugin
 
 import android.app.Activity
+import android.content.Context
 import android.content.DialogInterface.OnClickListener
+import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager.Authenticators
 import android.hardware.biometrics.BiometricPrompt
+import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
 import android.security.keystore.KeyGenParameterSpec
@@ -11,9 +14,13 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager
 import androidx.core.content.ContextCompat
+import androidx.core.hardware.fingerprint.FingerprintManagerCompat
 import androidx.fragment.app.FragmentActivity
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricCallBack
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricSecureCallBack
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.enums.BiometricType
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.exception.FeatureBiometricException
 import java.security.KeyStore
 import java.util.concurrent.Executor
@@ -103,6 +110,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         @RequiresApi(Build.VERSION_CODES.P)
         private fun getBiometricPromptP(
             activity: Activity,
+            type: BiometricType,
             title: String,
             description: String,
             negativeText: String,
@@ -111,24 +119,63 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         ): BiometricPrompt {
             return BiometricPrompt.Builder(activity).setTitle(title).setDescription(description)
                 .apply {
-                    setNegativeButton(negativeText, executor, listener)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        setAllowedAuthenticators(Authenticators.BIOMETRIC_STRONG)
+                    when (type) {
+                        BiometricType.WEAK -> {
+                            setNegativeButton(negativeText, executor, listener)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(Authenticators.BIOMETRIC_WEAK)
+                            }
+                        }
+
+                        BiometricType.STRONG -> {
+                            setNegativeButton(negativeText, executor, listener)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(Authenticators.BIOMETRIC_STRONG)
+                            }
+                        }
+
+                        BiometricType.DEVICE_CREDENTIAL -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(Authenticators.DEVICE_CREDENTIAL)
+                            }
+                        }
                     }
                 }.build()
         }
 
         private fun getAndroidXPromptInfo(
             title: String,
+            type: BiometricType,
             description: String,
             negativeText: String,
         ): androidx.biometric.BiometricPrompt.PromptInfo {
             return androidx.biometric.BiometricPrompt.PromptInfo.Builder().setTitle(title)
                 .setDescription(description).setNegativeButtonText(negativeText)
+                .apply {
+                    when (type) {
+                        BiometricType.WEAK -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                            }
+                        }
+
+                        BiometricType.STRONG -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                            }
+                        }
+
+                        BiometricType.DEVICE_CREDENTIAL -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                            }
+                        }
+                    }
+                }
                 .build()
         }
 
-        fun getAndroidXBiometricPrompt(
+        private fun getAndroidXBiometricPrompt(
             fragmentActivity: FragmentActivity,
             executor: Executor,
             callBack: androidx.biometric.BiometricPrompt.AuthenticationCallback,
@@ -139,6 +186,29 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 callBack,
             )
         }
+    }
+
+    fun listOfAvailableBiometric(): Boolean {
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                val isHaveFingerprint =
+                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+                println("MASUK IS HAVE FINGERPINT: $isHaveFingerprint")
+                val isHaveFace =
+                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
+                println("MASUK IS HAVE FACE: $isHaveFace")
+                activity.packageManager.systemAvailableFeatures.forEach {
+                    println("MASUK ELEMENT: ${it.name} & ${it.flags} & ${it.version}")
+                }
+            }
+
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                val isHaveFingerprint =
+                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+                println("MASUK IS HAVE FINGERPRINT: $isHaveFingerprint")
+            }
+        }
+        return false
     }
 
 
@@ -163,6 +233,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                     description = description,
                     negativeText = negativeText,
                     executor = executor,
+                    type = BiometricType.STRONG,
                     listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
                 )
 
@@ -218,6 +289,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 val promptInfo = getAndroidXPromptInfo(
                     title = title,
                     description = description,
+                    type = BiometricType.STRONG,
                     negativeText = negativeText
                 )
 
@@ -310,6 +382,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                     description = description,
                     negativeText = negativeText,
                     executor = executor,
+                    type = BiometricType.STRONG,
                     listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
                 )
 
@@ -358,6 +431,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 val promptInfo = getAndroidXPromptInfo(
                     title = title,
                     description = description,
+                    type = BiometricType.STRONG,
                     negativeText = negativeText
                 )
 
@@ -412,6 +486,99 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                     promptInfo,
                     androidx.biometric.BiometricPrompt.CryptoObject(cipher)
                 )
+            }
+        }
+    }
+
+    fun authenticate(
+        type: BiometricType,
+        cancellationSignal: CancellationSignal,
+        title: String,
+        description: String,
+        negativeText: String,
+        callBack: FeatureBiometricCallBack,
+    ) {
+        val executor = ContextCompat.getMainExecutor(activity)
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
+                val biometricPrompt = getBiometricPromptP(
+                    activity = activity,
+                    title = title,
+                    description = description,
+                    negativeText = negativeText,
+                    executor = executor,
+                    type = type,
+                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
+                )
+
+                biometricPrompt.authenticate(
+                    cancellationSignal,
+                    executor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            callBack.onSuccessAuthenticate()
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureBiometricException(
+                                    code = "$errorCode",
+                                    message = errString?.toString()
+                                )
+                            )
+                        }
+                    },
+                )
+            }
+
+            else -> {
+                val promptInfo = getAndroidXPromptInfo(
+                    title = title,
+                    description = description,
+                    type = type,
+                    negativeText = negativeText
+                )
+
+                val biometricPrompt = getAndroidXBiometricPrompt(
+                    fragmentActivity = activity as FragmentActivity,
+                    executor = executor,
+                    callBack = object :
+                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                            super.onAuthenticationSucceeded(result)
+                            callBack.onSuccessAuthenticate()
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureBiometricException(
+                                    code = "$errorCode",
+                                    message = errString.toString()
+                                )
+                            )
+                        }
+                    }
+                )
+                biometricPrompt.authenticate(promptInfo)
             }
         }
     }
