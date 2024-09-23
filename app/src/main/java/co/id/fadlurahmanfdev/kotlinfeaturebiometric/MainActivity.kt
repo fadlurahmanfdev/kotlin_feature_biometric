@@ -36,18 +36,18 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             desc = "Prompt Weak Biometric (Fingerprint & Face Recognition)",
             enum = "PROMPT_WEAK_BIOMETRIC"
         ),
-//        FeatureModel(
-//            featureIcon = R.drawable.baseline_developer_mode_24,
-//            title = "Prompt Strong Biometric",
-//            desc = "Prompt Strong Biometric (Fingerprint)",
-//            enum = "PROMPT_STRONG_BIOMETRIC"
-//        ),
-//        FeatureModel(
-//            featureIcon = R.drawable.baseline_developer_mode_24,
-//            title = "Prompt Credential Biometric",
-//            desc = "Prompt Credential Biometric (Device Password)",
-//            enum = "PROMPT_CREDENTIAL_BIOMETRIC"
-//        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Prompt Strong Biometric",
+            desc = "Prompt Strong Biometric (Fingerprint)",
+            enum = "PROMPT_STRONG_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Prompt Credential Biometric",
+            desc = "Prompt Credential Biometric (Device Password)",
+            enum = "PROMPT_CREDENTIAL_BIOMETRIC"
+        ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Prompt Biometric",
@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                 cancellationSignal = CancellationSignal()
                 featureBiometric.authenticate(
                     title = "Encrypt Biometric",
-                    description = "This will encrypt your text into encrypted text",
+                    description = "Authenticate using your biometric",
                     negativeText = "Cancel",
                     cancellationSignal = cancellationSignal,
                     type = BiometricType.WEAK,
@@ -120,38 +120,48 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     }
                 )
             }
-//
-//            "PROMPT_STRONG_BIOMETRIC" -> {
-//                corePlatformBiometricManager.prompt(
-//                    activity = this,
-//                    type = BiometricType.STRONG,
-//                    title = "Authenticate Biometric",
-//                    description = "Authenticate Biometric",
-//                    negativeText = "Cancel",
-//                    callBack = object : BiometricCallBack {
-//                        override fun onSuccessAuthenticate() {
-//                            super.onSuccessAuthenticate()
-//                            println("SUCCESS AUTHENTICATE")
-//                        }
-//                    }
-//                )
-//            }
-//
-//            "PROMPT_CREDENTIAL_BIOMETRIC" -> {
-//                corePlatformBiometricManager.prompt(
-//                    activity = this,
-//                    type = BiometricType.DEVICE_CREDENTIAL,
-//                    title = "Authenticate Biometric",
-//                    description = "Authenticate Biometric",
-//                    negativeText = "Cancel",
-//                    callBack = object : BiometricCallBack {
-//                        override fun onSuccessAuthenticate() {
-//                            super.onSuccessAuthenticate()
-//                            println("SUCCESS AUTHENTICATE")
-//                        }
-//                    }
-//                )
-//            }
+
+            "PROMPT_STRONG_BIOMETRIC" -> {
+                cancellationSignal = CancellationSignal()
+                featureBiometric.authenticate(
+                    title = "Encrypt Biometric",
+                    description = "Authenticate using your fingerprint",
+                    negativeText = "Cancel",
+                    cancellationSignal = cancellationSignal,
+                    type = BiometricType.STRONG,
+                    callBack = object : FeatureBiometricCallBack {
+                        override fun onSuccessAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Successfully Authenticate ${BiometricType.STRONG}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+                    }
+                )
+            }
+
+            "PROMPT_CREDENTIAL_BIOMETRIC" -> {
+                cancellationSignal = CancellationSignal()
+                featureBiometric.authenticate(
+                    title = "Encrypt Biometric",
+                    description = "Authenticate using your credential",
+                    negativeText = "Cancel",
+                    cancellationSignal = cancellationSignal,
+                    type = BiometricType.DEVICE_CREDENTIAL,
+                    callBack = object : FeatureBiometricCallBack {
+                        override fun onSuccessAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Successfully Authenticate ${BiometricType.DEVICE_CREDENTIAL}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+                    }
+                )
+            }
 
             "PROMPT_ENCRYPT_SECURE_BIOMETRIC" -> {
                 cancellationSignal = CancellationSignal()
@@ -190,11 +200,13 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             }
 
             "PROMPT_DECRYPT_SECURE_BIOMETRIC" -> {
+                encodedIvKey = "P4iutD98cgrNRYI9tFFACw=="
+                encodedEncryptedPassword = "42PRlUASXGODBWUa0je10w=="
                 cancellationSignal = CancellationSignal()
                 featureBiometric.authenticateSecureDecrypt(
                     alias = "fadlurahmanfdev",
                     encodedIvKey = encodedIvKey,
-                    title = "Encrypt Biometric",
+                    title = "Decrypt Biometric",
                     description = "This will decrypt your text into plain text",
                     negativeText = "Cancel",
                     cancellationSignal = cancellationSignal,
