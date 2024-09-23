@@ -1,7 +1,7 @@
 name: Manual Publish
 
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   build:
