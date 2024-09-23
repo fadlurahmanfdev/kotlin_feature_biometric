@@ -1,0 +1,53 @@
+name: Create Release & Upload To Maven
+
+on:
+  push:
+#    tags:
+#      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V3
+        uses: actions/checkout@v3
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup
+        id: setup
+        run: |
+          echo "TAG VERSION: ${{ github.ref_name }}"
+          echo "RELEASE NAME: ${GITHUB_REF#refs/tags/v}"
+          echo "::set-output name=release_name::${GITHUB_REF#refs/tags/v}"
+      - name: Setup Maven Central Repository Credential
+        run: |
+          echo "${{ secrets.GPG_PUBLIC_KEY }}" | gpg --dearmor > secret_key.gpg
+          ls
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "" >> gradle.properties
+          echo "mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> gradle.properties
+          echo "" >> gradle.properties
+          echo "mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> gradle.properties
+          echo "" >> gradle.properties
+          echo "signing.keyId=${{ secrets.GPG_KEY_ID }}" >> gradle.properties
+          echo "" >> gradle.properties >> gradle.properties
+          echo "signing.password=${{ secrets.GPG_KEY_PASSWORD }}" >> gradle.properties
+          echo "" >> gradle.properties >> gradle.properties
+          echo "signing.secretKeyRingFile=../secret_key.gpg" >> gradle.properties
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+      - name: Publish Library To Maven Central Repository
+        run: |
+          ./gradlew clean
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          chmod +x update_version.sh
+          ./update_version.sh kotlin_feature_identity/build.gradle.kts 0.0.1-beta ${{ steps.setup.outputs.release_name }}
+          ./gradlew :kotlin_feature_identity:publishMavenPublicationToMavenCentralRepository
+          
