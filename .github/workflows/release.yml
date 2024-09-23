@@ -2,8 +2,8 @@ name: Create Release & Upload To Maven
 
 on:
   push:
-#    tags:
-#      - 'v*'
+    tags:
+      - 'v*'
 
 jobs:
   build:
