@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Kotlin Feature Biometric"
+rootProject.name = "Kotlin Feature Identity"
 include(":app")
-include(":kotlin_feature_biometric")
+include(":kotlin_feature_identity")
