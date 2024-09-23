@@ -554,25 +554,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                         androidx.biometric.BiometricPrompt.AuthenticationCallback() {
                         override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
                             super.onAuthenticationSucceeded(result)
-                            val currentCipher = result.cryptoObject?.cipher
-
-                            if (currentCipher == null) {
-                                callBack.onErrorAuthenticate(
-                                    exception = FeatureBiometricException(
-                                        code = "CIPHER_MISSING_00",
-                                        message = "Cipher missing"
-                                    )
-                                )
-                                return
-                            }
-
-                            val encodedIvKey =
-                                Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
-
-                            callBack.onSuccessAuthenticateEncryptSecureBiometric(
-                                cipher = cipher,
-                                encodedIvKey = encodedIvKey
-                            )
+                            callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
                         }
 
                         override fun onAuthenticationFailed() {
