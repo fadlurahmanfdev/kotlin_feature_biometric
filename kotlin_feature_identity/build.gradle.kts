@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "co.id.fadlurahmanfdev.kotlin_feature_biometric"
+    namespace = "com.fadlurahmanfdev.kotlin_feature_identity"
     compileSdk = 34
 
     defaultConfig {
