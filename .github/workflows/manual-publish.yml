@@ -17,6 +17,7 @@ jobs:
         id: setup
         run: |
           echo "TAG VERSION: ${{ github.ref_name }}"
+          echo "::set-output name=release_name::${GITHUB_REF#refs/tags/v}"
       - name: Setup Maven Central Repository Credential
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --dearmor > secret_key.gpg
