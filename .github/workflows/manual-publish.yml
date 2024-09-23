@@ -1,8 +1,7 @@
-name: Create Release
+name: Manual Publish
 
 on:
   workflow_dispatch:
-
 
 jobs:
   build:
@@ -14,31 +13,38 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup GPG Key
+      - name: Setup
+        id: setup
         run: |
-          echo "${{ secrets.SIGNING_KEY }}" | gpg --dearmor > secret_key.gpg
+          echo "TAG VERSION: ${{ github.ref_name }}"
+      - name: Setup Maven Central Repository Credential
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --dearmor > secret_key.gpg
           ls
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "" >> gradle.properties
-          echo "mavenCentralUsername=${{ secrets.OSSRH_USERNAME }}" >> gradle.properties
+          echo "mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_TOKEN_USERNAME }}" >> gradle.properties
           echo "" >> gradle.properties
-          echo "mavenCentralPassword=${{ secrets.OSSRH_PASSWORD }}" >> gradle.properties
+          echo "mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_TOKEN_PASSWORD }}" >> gradle.properties
           echo "" >> gradle.properties
-          echo "signing.keyId=${{ secrets.SIGNING_KEY_ID }}" >> gradle.properties
+          echo "signing.keyId=${{ secrets.GPG_KEY_ID }}" >> gradle.properties
           echo "" >> gradle.properties >> gradle.properties
-          echo "signing.password=${{ secrets.SIGNING_KEY_PASSWORD }}" >> gradle.properties
+          echo "signing.password=${{ secrets.GPG_KEY_PASSWORD }}" >> gradle.properties
           echo "" >> gradle.properties >> gradle.properties
           echo "signing.secretKeyRingFile=../secret_key.gpg" >> gradle.properties
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
-      - name: Gradlew Tasks
+          cat gradle.properties
+      - name: Publish Library To Maven Central Repository
         run: |
           ./gradlew clean
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
-          ./gradlew :kotlin_feature_network:publishMavenPublicationToMavenCentralRepository
+          chmod +x update_version.sh
+          ./update_version.sh kotlin_feature_identity/build.gradle.kts 0.0.1-beta ${{ steps.setup.outputs.release_name }}
+          ./gradlew :kotlin_feature_identity:publishMavenPublicationToMavenCentralRepository
           
