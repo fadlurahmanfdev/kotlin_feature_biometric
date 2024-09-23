@@ -13,10 +13,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup
-        id: setup
-        run: |
-          echo "TAG VERSION: ${{ github.ref_name }}"
+#      - name: Setup
+#        id: setup
+#        run: |
+#          echo "TAG VERSION: ${{ github.ref_name }}"
       - name: Setup Maven Central Repository Credential
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --dearmor > secret_key.gpg
