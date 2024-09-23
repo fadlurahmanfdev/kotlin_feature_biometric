@@ -1,0 +1,44 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V3
+        uses: actions/checkout@v3
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup GPG Key
+        run: |
+          echo "${{ secrets.SIGNING_KEY }}" | gpg --dearmor > secret_key.gpg
+          ls
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "" >> gradle.properties
+          echo "mavenCentralUsername=${{ secrets.OSSRH_USERNAME }}" >> gradle.properties
+          echo "" >> gradle.properties
+          echo "mavenCentralPassword=${{ secrets.OSSRH_PASSWORD }}" >> gradle.properties
+          echo "" >> gradle.properties
+          echo "signing.keyId=${{ secrets.SIGNING_KEY_ID }}" >> gradle.properties
+          echo "" >> gradle.properties >> gradle.properties
+          echo "signing.password=${{ secrets.SIGNING_KEY_PASSWORD }}" >> gradle.properties
+          echo "" >> gradle.properties >> gradle.properties
+          echo "signing.secretKeyRingFile=../secret_key.gpg" >> gradle.properties
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+      - name: Gradlew Tasks
+        run: |
+          ./gradlew clean
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          echo "---------------------------||---------------------------"
+          ./gradlew :kotlin_feature_network:publishMavenPublicationToMavenCentralRepository
+          
