@@ -41,6 +41,7 @@ jobs:
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
+          cat gradle.properties
       - name: Publish Library To Maven Central Repository
         run: |
           ./gradlew clean
