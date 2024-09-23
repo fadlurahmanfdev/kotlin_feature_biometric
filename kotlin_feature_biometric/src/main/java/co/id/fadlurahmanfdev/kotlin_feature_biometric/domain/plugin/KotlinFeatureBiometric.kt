@@ -7,6 +7,7 @@ import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
 import android.os.CancellationSignal
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
@@ -101,6 +102,20 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                     )
                     key
                 }
+            }
+        }
+
+        private fun deleteSecretKey(alias: String) {
+            val keyStore = KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+            try {
+                keyStore.deleteEntry(alias)
+            } catch (e: Exception) {
+                Log.e(
+                    KotlinFeatureBiometric::class.java.simpleName,
+                    "failed to delete secret key: $alias"
+                )
+                throw FeatureBiometricException(code = "GET_EXISTING_KEY", message = e.message)
             }
         }
 
@@ -293,8 +308,38 @@ class KotlinFeatureBiometric(private val activity: Activity) {
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
         val cipher = getCipher()
-        val secretKey = getSecretKey(alias)
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        var secretKey = getSecretKey(alias)
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e is KeyPermanentlyInvalidatedException) {
+                    Log.w(
+                        KotlinFeatureBiometric::class.java.simpleName,
+                        "alias key $alias is already invalid, try to delete secret key & re init again"
+                    )
+                    deleteSecretKey(alias)
+                    secretKey = getSecretKey(alias)
+                    try {
+                        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+                    } catch (e: KeyPermanentlyInvalidatedException) {
+                        Log.e(
+                            KotlinFeatureBiometric::class.java.simpleName,
+                            "alias key $alias is already invalid"
+                        )
+                        return
+                    }
+                }
+            } else {
+                callBack.onErrorAuthenticate(
+                    FeatureBiometricException(
+                        code = "INIT_CIPHER",
+                        message = e.message
+                    )
+                )
+                return
+            }
+        }
 
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
@@ -477,10 +522,21 @@ class KotlinFeatureBiometric(private val activity: Activity) {
             val ivSpec = IvParameterSpec(ivKey)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
         } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e is KeyPermanentlyInvalidatedException) {
+                    callBack.onErrorAuthenticate(
+                        FeatureBiometricException(
+                            code = "KEY_PERMANENTLY_INVALID_EXCEPTION",
+                            message = "The provided key is permanently invalid. Please register a new key again.",
+                        )
+                    )
+                    return
+                }
+            }
             callBack.onErrorAuthenticate(
                 FeatureBiometricException(
                     code = "INIT_CIPHER",
-                    message = e.message,
+                    message = "The provided key is permanently invalid. Please register a new key again.",
                 )
             )
             return
