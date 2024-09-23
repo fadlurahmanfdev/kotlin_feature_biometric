@@ -26,9 +26,9 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
     private val features: List<FeatureModel> = listOf<FeatureModel>(
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "List of Biometric",
-            desc = "List of Biometric Available",
-            enum = "AVAILABLE_BIOMETRIC"
+            title = "Can Authenticate",
+            desc = "Can Authenticate",
+            enum = "CAN_AUTHENTICATE"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
@@ -96,8 +96,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
     override fun onClicked(item: FeatureModel) {
         when (item.enum) {
-            "AVAILABLE_BIOMETRIC" -> {
-                featureBiometric.listOfAvailableBiometric()
+            "CAN_AUTHENTICATE" -> {
+                featureBiometric.canAuthenticate()
             }
 
             "PROMPT_WEAK_BIOMETRIC" -> {

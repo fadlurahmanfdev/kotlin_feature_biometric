@@ -1,12 +1,9 @@
 package co.id.fadlurahmanfdev.kotlin_feature_biometric.domain.plugin
 
 import android.app.Activity
-import android.content.Context
 import android.content.DialogInterface.OnClickListener
-import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager.Authenticators
 import android.hardware.biometrics.BiometricPrompt
-import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
 import android.security.keystore.KeyGenParameterSpec
@@ -16,11 +13,11 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.core.content.ContextCompat
-import androidx.core.hardware.fingerprint.FingerprintManagerCompat
 import androidx.fragment.app.FragmentActivity
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricCallBack
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.callback.FeatureBiometricSecureCallBack
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.enums.BiometricType
+import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.enums.CanAuthenticateReasonType
 import co.id.fadlurahmanfdev.kotlin_feature_biometric.data.exception.FeatureBiometricException
 import java.security.KeyStore
 import java.util.concurrent.Executor
@@ -188,30 +185,104 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
-    fun listOfAvailableBiometric(): Boolean {
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                val isHaveFingerprint =
-                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
-                println("MASUK IS HAVE FINGERPINT: $isHaveFingerprint")
-                val isHaveFace =
-                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
-                println("MASUK IS HAVE FACE: $isHaveFace")
-                activity.packageManager.systemAvailableFeatures.forEach {
-                    println("MASUK ELEMENT: ${it.name} & ${it.flags} & ${it.version}")
-                }
-            }
-
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
-                val isHaveFingerprint =
-                    activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
-                println("MASUK IS HAVE FINGERPRINT: $isHaveFingerprint")
-            }
-        }
-        return false
+    /**
+     * Determines the device's can authenticate using biometric
+     *
+     * @return The boolean indicate which the device can authenticate using biometric
+     */
+    fun canAuthenticate(): Boolean {
+        return canAuthenticateWithReason() == CanAuthenticateReasonType.SUCCESS
     }
 
+    /**
+     * Determines the device's ability to authenticate using biometrics or device credentials.
+     *
+     * This function uses the `BiometricManager` to check the current biometric and device credential
+     * authentication capabilities and returns a corresponding `CanAuthenticateReasonType` value.
+     *
+     * It checks for the following authentication states:
+     *
+     * - `CanAuthenticateReasonType.SUCCESS`: Biometric authentication is available and the user is enrolled.
+     * - `CanAuthenticateReasonType.NO_BIOMETRIC_AVAILABLE`: No biometric hardware is available on the device.
+     * - `CanAuthenticateReasonType.BIOMETRIC_UNAVAILABLE`: Biometric hardware is temporarily unavailable (e.g., being used by another process).
+     * - `CanAuthenticateReasonType.NONE_ENROLLED`: Biometric hardware is available, but the user has not enrolled any biometric credentials.
+     * - `CanAuthenticateReasonType.UNKNOWN`: An unknown error occurred during the authentication capability check.
+     *
+     * If the function returns `CanAuthenticateReasonType.NONE_ENROLLED`, you can guide the user to enroll their biometrics
+     * by starting the biometric enrollment intent with:
+     *
+     * ```kotlin
+     * val enrollIntent = Intent(Settings.ACTION_BIOMETRIC_ENROLL).apply {
+     *     putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+     *         BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+     * }
+     * startActivityForResult(enrollIntent, REQUEST_CODE)
+     * ```
+     *
+     * @return The reason type indicating the result of the biometric or device credential authentication check.
+     */
+    fun canAuthenticateWithReason(): CanAuthenticateReasonType {
+        val biometricManager = androidx.biometric.BiometricManager.from(activity)
+        return when (biometricManager.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
+            androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS ->
+                CanAuthenticateReasonType.SUCCESS
 
+            androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
+                CanAuthenticateReasonType.NO_BIOMETRIC_AVAILABLE
+
+            androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
+                CanAuthenticateReasonType.BIOMETRIC_UNAVAILABLE
+
+            androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                CanAuthenticateReasonType.NONE_ENROLLED
+            }
+
+            else -> {
+                CanAuthenticateReasonType.UNKNOWN
+            }
+        }
+    }
+
+    /**
+     * Initiates a secure biometric authentication process for encryption using the provided alias and cipher.
+     *
+     * This function sets up and prompts the user for biometric authentication (or device credentials, depending on the device’s support).
+     * If authentication succeeds, the provided cipher will be initialized for encryption, and an initialization vector (IV) will be
+     * generated and returned in base64 format. The IV is necessary for decryption of the encrypted data.
+     *
+     * The function adapts the authentication mechanism based on the device's Android version:
+     *
+     * - **Android P (API 28) and above**: Uses the updated `BiometricPrompt` API for stronger biometric security.
+     * - **Android below P**: Uses the older `androidx.biometric.BiometricPrompt` API.
+     *
+     * On successful authentication, the `onSuccessAuthenticateEncryptSecureBiometric` callback is triggered with the cipher and encoded IV.
+     * If an error occurs or authentication fails, appropriate error and failure callbacks will be triggered.
+     *
+     * @param alias The alias used to retrieve the secret key from the Android keystore.
+     * @param title The title of the biometric prompt displayed to the user.
+     * @param description A description message for the biometric prompt, explaining the purpose of authentication.
+     * @param negativeText The text for the negative button (cancel button) in the biometric prompt.
+     * @param cancellationSignal A signal to cancel the authentication if needed, such as when the user cancels the operation.
+     * @param callBack The callback interface to handle success, failure, and error scenarios during the authentication process.
+     *
+     * The following events are handled through the callback:
+     * - **onSuccessAuthenticateEncryptSecureBiometric(cipher: Cipher, encodedIvKey: String)**: Called when authentication is successful and encryption can proceed. The cipher and its initialization vector (IV) are provided.
+     * - **onFailedAuthenticate()**: Called when authentication fails (e.g., user did not pass biometric validation).
+     * - **onErrorAuthenticate(exception: FeatureBiometricException)**: Called when an error occurs, such as an issue with the cipher or the authentication process.
+     *
+     * Example usage for encryption:
+     *
+     * ```kotlin
+     * authenticateSecureEncrypt(
+     *     alias = "myKeyAlias",
+     *     title = "Secure Login",
+     *     description = "Authenticate to encrypt your data",
+     *     negativeText = "Cancel",
+     *     cancellationSignal = CancellationSignal(),
+     *     callBack = myBiometricCallback
+     * )
+     * ```
+     */
     fun authenticateSecureEncrypt(
         alias: String,
         title: String,
@@ -348,6 +419,47 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
+    /**
+     * Initiates a secure biometric authentication process for decryption using the provided alias and encoded IV Key.
+     *
+     * This function sets up and prompts the user for biometric authentication (or device credentials, depending on the device’s support).
+     * If authentication succeeds, the provided cipher will be initialized for decryption.
+     *
+     * The function adapts the authentication mechanism based on the device's Android version:
+     *
+     * - **Android P (API 28) and above**: Uses the updated `BiometricPrompt` API for stronger biometric security.
+     * - **Android below P**: Uses the older `androidx.biometric.BiometricPrompt` API.
+     *
+     * On successful authentication, the `onSuccessAuthenticateDecryptSecureBiometric` callback is triggered with the cipher.
+     * If an error occurs or authentication fails, appropriate error and failure callbacks will be triggered.
+     *
+     * @param alias The alias used to retrieve the secret key from the Android keystore.
+     * @param encodedIvKey The iv key used for decryption.
+     * @param title The title of the biometric prompt displayed to the user.
+     * @param description A description message for the biometric prompt, explaining the purpose of authentication.
+     * @param negativeText The text for the negative button (cancel button) in the biometric prompt.
+     * @param cancellationSignal A signal to cancel the authentication if needed, such as when the user cancels the operation.
+     * @param callBack The callback interface to handle success, failure, and error scenarios during the authentication process.
+     *
+     * The following events are handled through the callback:
+     * - **onSuccessAuthenticateEncryptSecureBiometric(cipher: Cipher, encodedIvKey: String)**: Called when authentication is successful and encryption can proceed. The cipher and its initialization vector (IV) are provided.
+     * - **onFailedAuthenticate()**: Called when authentication fails (e.g., user did not pass biometric validation).
+     * - **onErrorAuthenticate(exception: FeatureBiometricException)**: Called when an error occurs, such as an issue with the cipher or the authentication process.
+     *
+     * Example usage for encryption:
+     *
+     * ```kotlin
+     * authenticateSecureDecrypt(
+     *     alias = "myKeyAlias",
+     *     encodedIvKey = myEncodedIvKey,
+     *     title = "Secure Login",
+     *     description = "Authenticate to encrypt your data",
+     *     negativeText = "Cancel",
+     *     cancellationSignal = CancellationSignal(),
+     *     callBack = myBiometricCallback
+     * )
+     * ```
+     */
     fun authenticateSecureDecrypt(
         alias: String,
         encodedIvKey: String,
@@ -490,6 +602,46 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
+    /**
+     * Initiates a biometric authentication process.
+     *
+     * This function sets up and prompts the user for biometric authentication (or device credentials, depending on the device’s support).
+     * If authentication succeeds, the provided cipher will be initialized for decryption.
+     *
+     * The function adapts the authentication mechanism based on the device's Android version:
+     *
+     * - **Android P (API 28) and above**: Uses the updated `BiometricPrompt` API for stronger biometric security.
+     * - **Android below P**: Uses the older `androidx.biometric.BiometricPrompt` API.
+     *
+     * On successful authentication, the `onSuccessAuthenticate` callback is triggered.
+     * If an error occurs or authentication fails, appropriate error and failure callbacks will be triggered.
+     *
+     * @param type The type of biometric, it could be BiometricType.WEAK
+     * @param title The title of the biometric prompt displayed to the user.
+     * @param description A description message for the biometric prompt, explaining the purpose of authentication.
+     * @param negativeText The text for the negative button (cancel button) in the biometric prompt.
+     * @param cancellationSignal A signal to cancel the authentication if needed, such as when the user cancels the operation.
+     * @param callBack The callback interface to handle success, failure, and error scenarios during the authentication process.
+     *
+     * The following events are handled through the callback:
+     * - **onSuccessAuthenticate()**: Called when authentication is successful.
+     * - **onFailedAuthenticate()**: Called when authentication fails (e.g., user did not pass biometric validation).
+     * - **onErrorAuthenticate(exception: FeatureBiometricException)**: Called when an error occurs, such as an issue with the cipher or the authentication process.
+     *
+     * Example usage for encryption:
+     *
+     * ```kotlin
+     * authenticate(
+     *     type = BiometricType.WEAK,
+     *     alias = "myKeyAlias",
+     *     title = "Secure Login",
+     *     description = "Authenticate to encrypt your data",
+     *     negativeText = "Cancel",
+     *     cancellationSignal = CancellationSignal(),
+     *     callBack = myBiometricCallback
+     * )
+     * ```
+     */
     fun authenticate(
         type: BiometricType,
         cancellationSignal: CancellationSignal,
@@ -583,11 +735,34 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
+    /**
+     * Encrypts a plain text string using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for encryption and the plain text to be encrypted.
+     * It encrypts the plain text and returns the result as a Base64-encoded string without any extra
+     * wrapping or padding.
+     *
+     * @param cipher The `Cipher` instance initialized in `ENCRYPT_MODE`.
+     * @param plainText The plain text string to be encrypted.
+     * @return The Base64-encoded encrypted string.
+     */
     fun encrypt(cipher: Cipher, plainText: String): String {
         val byteEncryptedPassword = cipher.doFinal(plainText.toByteArray())
         return Base64.encodeToString(byteEncryptedPassword, Base64.NO_WRAP)
     }
 
+    /**
+     * Decrypts an encrypted byte array using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for decryption and the encrypted byte array.
+     * It decrypts the byte array and returns the original plain text string. If decryption fails
+     * due to incorrect padding, a `FeatureBiometricException` is thrown with the appropriate error message.
+     *
+     * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
+     * @param encryptedPassword The encrypted byte array to be decrypted.
+     * @return The decrypted plain text string.
+     * @throws FeatureBiometricException If the decryption fails due to padding issues (BadPaddingException).
+     */
     fun decrypt(cipher: Cipher, encryptedPassword: ByteArray): String {
         try {
             return String(cipher.doFinal(encryptedPassword))
@@ -599,6 +774,18 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         }
     }
 
+    /**
+     * Decrypts an encrypted Base64-encoded string using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for decryption and a Base64-encoded encrypted string.
+     * It decodes the encrypted string from Base64 to a byte array, and then decrypts it using the
+     * `decrypt(cipher, encryptedPassword: ByteArray)` function.
+     *
+     * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
+     * @param encryptedPassword The Base64-encoded encrypted string to be decrypted.
+     * @return The decrypted plain text string.
+     * @throws FeatureBiometricException If the decryption fails due to padding issues.
+     */
     fun decrypt(cipher: Cipher, encryptedPassword: String): String {
         val decodedPassword =
             Base64.decode(encryptedPassword, Base64.NO_WRAP)
