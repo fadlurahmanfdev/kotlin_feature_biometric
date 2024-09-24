@@ -21,11 +21,11 @@ jobs:
           echo "::set-output name=release_name::${GITHUB_REF_NAME#v}"
       - name: Setup Maven Central Repository Credential
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --dearmor > secret_key.gpg
-          ls
-          echo "---------------------------||---------------------------"
-          echo "---------------------------||---------------------------"
-          echo "---------------------------||---------------------------"
+#          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --dearmor > secret_key.gpg
+#          ls
+#          echo "---------------------------||---------------------------"
+#          echo "---------------------------||---------------------------"
+#          echo "---------------------------||---------------------------"
           echo "" >> gradle.properties
           echo "mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_TOKEN_USERNAME }}" >> gradle.properties
           echo "" >> gradle.properties
