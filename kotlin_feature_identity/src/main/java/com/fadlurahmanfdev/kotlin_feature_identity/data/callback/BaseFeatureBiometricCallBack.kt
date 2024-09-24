@@ -5,7 +5,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometr
 import javax.crypto.Cipher
 
 interface BaseFeatureBiometricCallBack {
-    fun onDialogClick(dialogInterface: DialogInterface?, which:Int){
+    fun onDialogClick(dialogInterface: DialogInterface?, which: Int) {
 
     }
 
@@ -14,9 +14,11 @@ interface BaseFeatureBiometricCallBack {
     fun onErrorAuthenticate(exception: FeatureBiometricException) {}
 }
 
-interface FeatureBiometricSecureCallBack : BaseFeatureBiometricCallBack {
-
+interface FeatureBiometricEncryptSecureCallBack : BaseFeatureBiometricCallBack {
     fun onSuccessAuthenticateEncryptSecureBiometric(cipher: Cipher, encodedIvKey: String)
+}
+
+interface FeatureBiometricDecryptSecureCallBack : BaseFeatureBiometricCallBack {
     fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher)
 }
 

@@ -10,13 +10,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
-import com.fadlurahmanfdev.kotlin_feature_identity.domain.plugin.KotlinFeatureBiometric
 import com.fadlurahmanfdev.example.data.FeatureModel
 import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
+import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
 import javax.crypto.Cipher
 
 class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
@@ -170,7 +171,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     negativeText = "Cancel",
                     alias = "fadlurahmanfdev",
                     cancellationSignal = cancellationSignal,
-                    callBack = object : FeatureBiometricSecureCallBack {
+                    callBack = object : FeatureBiometricEncryptSecureCallBack {
                         override fun onSuccessAuthenticateEncryptSecureBiometric(
                             cipher: Cipher,
                             encodedIvKey: String
@@ -192,8 +193,6 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             )
                             toast.show()
                         }
-
-                        override fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {}
                     }
                 )
             }
@@ -209,12 +208,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     description = "This will decrypt your text into plain text",
                     negativeText = "Cancel",
                     cancellationSignal = cancellationSignal,
-                    callBack = object : FeatureBiometricSecureCallBack {
-                        override fun onSuccessAuthenticateEncryptSecureBiometric(
-                            cipher: Cipher,
-                            encodedIvKey: String
-                        ) {}
-
+                    callBack = object : FeatureBiometricDecryptSecureCallBack {
                         override fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {
                             val decodedPassword =
                                 Base64.decode(encodedEncryptedPassword, Base64.NO_WRAP)

@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.domain.plugin
+package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.app.Activity
 import android.content.DialogInterface.OnClickListener
@@ -16,7 +16,8 @@ import androidx.biometric.BiometricManager
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CanAuthenticateReasonType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
@@ -304,7 +305,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         description: String,
         negativeText: String,
         cancellationSignal: CancellationSignal,
-        callBack: FeatureBiometricSecureCallBack,
+        callBack: FeatureBiometricEncryptSecureCallBack,
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
         val cipher = getCipher()
@@ -512,7 +513,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         description: String,
         negativeText: String,
         cancellationSignal: CancellationSignal,
-        callBack: FeatureBiometricSecureCallBack,
+        callBack: FeatureBiometricDecryptSecureCallBack,
     ) {
         val executor = ContextCompat.getMainExecutor(activity)
         val cipher = getCipher()
