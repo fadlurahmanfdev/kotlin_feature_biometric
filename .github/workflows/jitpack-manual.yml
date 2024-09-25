@@ -39,5 +39,5 @@ jobs:
         uses: wei/curl@master
         continue-on-error: true
         with:
-          args: --verbose https://jitpack.io/com/github/fadlurahmanfdev/kotlin_feature_identity/${{ steps.setup.outputs.release_name }}/kotlin_feature_identity-${{ steps.setup.outputs.release_name }}.pom
+          args: --verbose https://jitpack.io/com/github/fadlurahmanfdev/kotlin_feature_identity/${{ github.ref_name }}/kotlin_feature_identity-${{ github.ref_name }}.pom
           
