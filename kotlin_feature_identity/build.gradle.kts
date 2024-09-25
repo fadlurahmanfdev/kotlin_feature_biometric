@@ -56,7 +56,7 @@ mavenPublishing {
     coordinates("com.fadlurahmanfdev", "kotlin_feature_identity", "0.0.1-beta")
 
     pom {
-        name.set("Kotlin Library Feature Network")
+        name.set("Kotlin Library Feature Identity")
         description.set("A comprehensive identity library for Android, designed to provide seamless integration with features like biometric authentication, passkeys, credential management, and more, based on Android's identity framework.")
         inceptionYear.set("2024")
         url.set("https://github.com/fadlurahmanfdev/kotlin_feature_identity/")
