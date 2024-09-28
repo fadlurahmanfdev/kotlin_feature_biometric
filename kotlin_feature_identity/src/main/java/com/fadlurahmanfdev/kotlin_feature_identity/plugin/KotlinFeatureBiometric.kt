@@ -2,6 +2,7 @@ package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.app.Activity
 import android.content.DialogInterface.OnClickListener
+import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager.Authenticators
 import android.hardware.biometrics.BiometricPrompt
 import android.os.Build
@@ -198,6 +199,19 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 executor,
                 callBack,
             )
+        }
+    }
+
+    /**
+     * Determines the device's have feature biometric
+     *
+     * @return The boolean indicate which the device have feature biometric
+     */
+    fun haveFeatureBiometric(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) || activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
+        } else {
+            false
         }
     }
 

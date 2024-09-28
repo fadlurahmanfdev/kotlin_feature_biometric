@@ -26,6 +26,12 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
     private val features: List<FeatureModel> = listOf<FeatureModel>(
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Have Biometric?",
+            desc = "Have Biometric?",
+            enum = "HAVE_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Can Authenticate",
             desc = "Can Authenticate",
             enum = "CAN_AUTHENTICATE"
@@ -96,6 +102,11 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
     override fun onClicked(item: FeatureModel) {
         when (item.enum) {
+            "HAVE_BIOMETRIC" -> {
+                val isHaveFeatureBiometric = featureBiometric.haveFeatureBiometric()
+                Log.d(this::class.java.simpleName, "Device is have feature biometric: $isHaveFeatureBiometric")
+            }
+
             "CAN_AUTHENTICATE" -> {
                 featureBiometric.canAuthenticate()
             }
