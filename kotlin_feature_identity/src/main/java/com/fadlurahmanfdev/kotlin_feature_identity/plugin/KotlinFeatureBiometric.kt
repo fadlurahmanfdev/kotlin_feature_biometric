@@ -20,7 +20,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometri
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CanAuthenticateReasonType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureBiometricStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import java.security.KeyStore
 import java.util.concurrent.Executor
@@ -221,7 +221,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * @return The boolean indicate which the device can authenticate using biometric
      */
     fun canAuthenticate(): Boolean {
-        return canAuthenticateWithReason() == CanAuthenticateReasonType.SUCCESS
+        return checkBiometricStatus() == FeatureBiometricStatus.SUCCESS
     }
 
     /**
@@ -251,24 +251,24 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * @return The reason type indicating the result of the biometric or device credential authentication check.
      */
-    fun canAuthenticateWithReason(): CanAuthenticateReasonType {
+    fun checkBiometricStatus(): FeatureBiometricStatus {
         val biometricManager = androidx.biometric.BiometricManager.from(activity)
         return when (biometricManager.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
             androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS ->
-                CanAuthenticateReasonType.SUCCESS
+                FeatureBiometricStatus.SUCCESS
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
-                CanAuthenticateReasonType.NO_BIOMETRIC_AVAILABLE
+                FeatureBiometricStatus.NO_BIOMETRIC_AVAILABLE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
-                CanAuthenticateReasonType.BIOMETRIC_UNAVAILABLE
+                FeatureBiometricStatus.BIOMETRIC_UNAVAILABLE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                CanAuthenticateReasonType.NONE_ENROLLED
+                FeatureBiometricStatus.NONE_ENROLLED
             }
 
             else -> {
-                CanAuthenticateReasonType.UNKNOWN
+                FeatureBiometricStatus.UNKNOWN
             }
         }
     }
