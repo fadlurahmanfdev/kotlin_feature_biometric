@@ -1,6 +1,6 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.data.enums
 
-enum class CanAuthenticateReasonType {
+enum class FeatureBiometricStatus {
     /**
      * Can authenticate using biometrics.
      */
