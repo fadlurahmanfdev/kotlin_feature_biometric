@@ -104,14 +104,35 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         when (item.enum) {
             "HAVE_BIOMETRIC" -> {
                 val isHaveFeatureBiometric = featureBiometric.haveFeatureBiometric()
-                Log.d(this::class.java.simpleName, "Device is have feature biometric: $isHaveFeatureBiometric")
+                Log.d(
+                    this::class.java.simpleName,
+                    "Device is have feature biometric: $isHaveFeatureBiometric"
+                )
             }
 
             "CAN_AUTHENTICATE" -> {
-                featureBiometric.canAuthenticate()
+                val canAuthenticateBiometricWeak =
+                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                val canAuthenticateBiometricStrong =
+                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                val canAuthenticateBiometricDeviceCredential =
+                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+                Log.d(
+                    this::class.java.simpleName,
+                    "CAN AUTHENTICATE BIOMETRIC WEAK -> ${canAuthenticateBiometricWeak}"
+                )
+                Log.d(
+                    this::class.java.simpleName,
+                    "CAN AUTHENTICATE BIOMETRIC STRONG -> ${canAuthenticateBiometricStrong}"
+                )
+                Log.d(
+                    this::class.java.simpleName,
+                    "CAN AUTHENTICATE BIOMETRIC DEVICE CREDENTIAL -> ${canAuthenticateBiometricDeviceCredential}"
+                )
             }
 
             "PROMPT_WEAK_BIOMETRIC" -> {
+
                 cancellationSignal = CancellationSignal()
                 featureBiometric.authenticate(
                     title = "Encrypt Biometric",
