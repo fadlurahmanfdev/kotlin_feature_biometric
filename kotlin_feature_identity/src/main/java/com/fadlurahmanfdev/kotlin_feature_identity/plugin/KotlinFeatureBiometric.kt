@@ -209,7 +209,24 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      */
     fun haveFeatureBiometric(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) || activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
+            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) || activity.packageManager.hasSystemFeature(
+                PackageManager.FEATURE_FACE
+            )
+        } else {
+            false
+        }
+    }
+
+    /**
+     * Determines the device's have feature biometric
+     *
+     * @return The boolean indicate which the device have feature biometric
+     */
+    fun haveFaceDetection(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) or activity.packageManager.hasSystemFeature(
+                "com.samsung.android.bio.face"
+            )
         } else {
             false
         }
@@ -220,8 +237,8 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * @return The boolean indicate which the device can authenticate using biometric
      */
-    fun canAuthenticate(): Boolean {
-        return checkBiometricStatus() == FeatureBiometricStatus.SUCCESS
+    fun canAuthenticate(authenticators: Int = androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL): Boolean {
+        return checkBiometricStatus(authenticators) == FeatureBiometricStatus.SUCCESS
     }
 
     /**
@@ -251,9 +268,9 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * @return The reason type indicating the result of the biometric or device credential authentication check.
      */
-    fun checkBiometricStatus(): FeatureBiometricStatus {
+    fun checkBiometricStatus(authenticators: Int): FeatureBiometricStatus {
         val biometricManager = androidx.biometric.BiometricManager.from(activity)
-        return when (biometricManager.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
+        return when (biometricManager.canAuthenticate(authenticators)) {
             androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS ->
                 FeatureBiometricStatus.SUCCESS
 
