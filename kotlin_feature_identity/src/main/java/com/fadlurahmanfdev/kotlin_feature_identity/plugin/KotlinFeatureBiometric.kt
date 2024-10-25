@@ -80,6 +80,10 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 val existingSecretKey =
                     keyStore.getKey(alias, null) as SecretKey?
                 if (existingSecretKey != null) {
+                    Log.d(
+                        this::class.java.simpleName,
+                        "successfully use existing key - $alias"
+                    )
                     return existingSecretKey
                 }
             } catch (e: Exception) {
@@ -249,11 +253,11 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * It checks for the following authentication states:
      *
-     * - `CanAuthenticateReasonType.SUCCESS`: Biometric authentication is available and the user is enrolled.
-     * - `CanAuthenticateReasonType.NO_BIOMETRIC_AVAILABLE`: No biometric hardware is available on the device.
-     * - `CanAuthenticateReasonType.BIOMETRIC_UNAVAILABLE`: Biometric hardware is temporarily unavailable (e.g., being used by another process).
-     * - `CanAuthenticateReasonType.NONE_ENROLLED`: Biometric hardware is available, but the user has not enrolled any biometric credentials.
-     * - `CanAuthenticateReasonType.UNKNOWN`: An unknown error occurred during the authentication capability check.
+     * - `FeatureBiometricStatus.SUCCESS`: Biometric authentication is available and the user is enrolled.
+     * - `FeatureBiometricStatus.NO_BIOMETRIC_AVAILABLE`: No biometric hardware is available on the device.
+     * - `FeatureBiometricStatus.BIOMETRIC_UNAVAILABLE`: Biometric hardware is temporarily unavailable (e.g., being used by another process).
+     * - `FeatureBiometricStatus.NONE_ENROLLED`: Biometric hardware is available, but the user has not enrolled any biometric credentials.
+     * - `FeatureBiometricStatus.UNKNOWN`: An unknown error occurred during the authentication capability check.
      *
      * If the function returns `CanAuthenticateReasonType.NONE_ENROLLED`, you can guide the user to enroll their biometrics
      * by starting the biometric enrollment intent with:
@@ -817,8 +821,8 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * @return The Base64-encoded encrypted string.
      */
     fun encrypt(cipher: Cipher, plainText: String): String {
-        val byteEncryptedPassword = cipher.doFinal(plainText.toByteArray())
-        return Base64.encodeToString(byteEncryptedPassword, Base64.NO_WRAP)
+        val byteEncryptedText = cipher.doFinal(plainText.toByteArray())
+        return Base64.encodeToString(byteEncryptedText, Base64.NO_WRAP)
     }
 
     /**
@@ -829,13 +833,13 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * due to incorrect padding, a `FeatureBiometricException` is thrown with the appropriate error message.
      *
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
-     * @param encryptedPassword The encrypted byte array to be decrypted.
+     * @param encryptedText The encrypted byte array to be decrypted.
      * @return The decrypted plain text string.
      * @throws FeatureBiometricException If the decryption fails due to padding issues (BadPaddingException).
      */
-    fun decrypt(cipher: Cipher, encryptedPassword: ByteArray): String {
+    fun decrypt(cipher: Cipher, encryptedText: ByteArray): String {
         try {
-            return String(cipher.doFinal(encryptedPassword))
+            return String(cipher.doFinal(encryptedText))
         } catch (e: BadPaddingException) {
             throw FeatureBiometricException(
                 code = "BAD_PADDING_EXCEPTION",
@@ -852,13 +856,13 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * `decrypt(cipher, encryptedPassword: ByteArray)` function.
      *
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
-     * @param encryptedPassword The Base64-encoded encrypted string to be decrypted.
+     * @param encryptedText The Base64-encoded encrypted string to be decrypted.
      * @return The decrypted plain text string.
      * @throws FeatureBiometricException If the decryption fails due to padding issues.
      */
-    fun decrypt(cipher: Cipher, encryptedPassword: String): String {
-        val decodedPassword =
-            Base64.decode(encryptedPassword, Base64.NO_WRAP)
-        return decrypt(cipher = cipher, encryptedPassword = decodedPassword)
+    fun decrypt(cipher: Cipher, encryptedText: String): String {
+        val decodedText =
+            Base64.decode(encryptedText, Base64.NO_WRAP)
+        return decrypt(cipher = cipher, encryptedText = decodedText)
     }
 }

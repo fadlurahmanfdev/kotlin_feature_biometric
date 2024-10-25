@@ -230,8 +230,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             }
 
             "PROMPT_DECRYPT_SECURE_BIOMETRIC" -> {
-                encodedIvKey = "P4iutD98cgrNRYI9tFFACw=="
-                encodedEncryptedPassword = "42PRlUASXGODBWUa0je10w=="
+                encodedIvKey = "moTbbjZiSzH7GvKkk21/OA=="
+                encodedEncryptedPassword = "aYynFWWEJHXNLpNxlUDjWQ=="
                 cancellationSignal = CancellationSignal()
                 featureBiometric.authenticateSecureDecrypt(
                     alias = "fadlurahmanfdev",
