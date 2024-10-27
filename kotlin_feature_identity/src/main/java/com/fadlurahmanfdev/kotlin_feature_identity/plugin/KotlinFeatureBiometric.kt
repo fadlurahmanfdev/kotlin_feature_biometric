@@ -426,12 +426,16 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errString: CharSequence?
                         ) {
                             super.onAuthenticationError(errorCode, errString)
-                            callBack.onErrorAuthenticate(
-                                FeatureBiometricException(
-                                    code = "$errorCode",
-                                    message = errString?.toString()
+                            if (errorCode == 10) {
+                                callBack.onCanceled()
+                            } else {
+                                callBack.onErrorAuthenticate(
+                                    FeatureBiometricException(
+                                        code = "$errorCode",
+                                        message = errString?.toString()
+                                    )
                                 )
-                            )
+                            }
                         }
                     },
                 )
@@ -483,7 +487,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errString: CharSequence
                         ) {
                             super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10 && errString == "canceled") {
+                            if (errorCode == 10) {
                                 callBack.onCanceled()
                             } else {
                                 callBack.onErrorAuthenticate(
@@ -624,7 +628,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errString: CharSequence?
                         ) {
                             super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10 && errString == "canceled") {
+                            if (errorCode == 10) {
                                 callBack.onCanceled()
                             } else {
                                 callBack.onErrorAuthenticate(
@@ -667,12 +671,16 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errString: CharSequence
                         ) {
                             super.onAuthenticationError(errorCode, errString)
-                            callBack.onErrorAuthenticate(
-                                FeatureBiometricException(
-                                    code = "$errorCode",
-                                    message = errString.toString()
+                            if (errorCode == 10) {
+                                callBack.onCanceled()
+                            } else {
+                                callBack.onErrorAuthenticate(
+                                    FeatureBiometricException(
+                                        code = "$errorCode",
+                                        message = errString.toString()
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 )
@@ -750,13 +758,11 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                     executor,
                     object : BiometricPrompt.AuthenticationCallback() {
                         override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-                            println("MASUK SINI onAuthenticationSucceeded")
                             super.onAuthenticationSucceeded(result)
                             callBack.onSuccessAuthenticate()
                         }
 
                         override fun onAuthenticationFailed() {
-                            println("MASUK SINI onAuthenticationFailed")
                             super.onAuthenticationFailed()
                             callBack.onFailedAuthenticate()
                         }
@@ -765,9 +771,8 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errorCode: Int,
                             errString: CharSequence?
                         ) {
-                            println("MASUK SINI onAuthenticationError ${errorCode} & ${errString}")
                             super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10 && errString == "canceled") {
+                            if (errorCode == 10) {
                                 callBack.onCanceled();
                             } else {
                                 callBack.onErrorAuthenticate(
@@ -810,7 +815,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                             errString: CharSequence
                         ) {
                             super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10 && errString == "canceled") {
+                            if (errorCode == 10) {
                                 callBack.onCanceled();
                             } else {
                                 callBack.onErrorAuthenticate(
