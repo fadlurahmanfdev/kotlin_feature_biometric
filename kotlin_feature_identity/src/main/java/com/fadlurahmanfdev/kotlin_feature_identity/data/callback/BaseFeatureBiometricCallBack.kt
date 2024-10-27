@@ -12,6 +12,8 @@ interface BaseFeatureBiometricCallBack {
     fun onFailedAuthenticate() {}
 
     fun onErrorAuthenticate(exception: FeatureBiometricException) {}
+
+    fun onCanceled() {}
 }
 
 interface FeatureBiometricEncryptSecureCallBack : BaseFeatureBiometricCallBack {
