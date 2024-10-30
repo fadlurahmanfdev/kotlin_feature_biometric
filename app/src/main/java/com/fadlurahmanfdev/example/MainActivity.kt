@@ -15,7 +15,7 @@ import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
 import javax.crypto.Cipher
@@ -136,7 +136,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
             "CAN_AUTHENTICATE_USING_BIOMETRIC" -> {
                 val canAuthenticate =
-                    featureBiometric.canAuthenticate(AuthenticatorType.BIOMETRIC)
+                    featureBiometric.canAuthenticate(FeatureAuthenticatorType.BIOMETRIC)
                 Log.d(
                     this::class.java.simpleName,
                     "can authenticate using biometric: $canAuthenticate"
@@ -145,7 +145,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
             "CAN_AUTHENTICATE_USING_DEVICE_CREDENTIAL" -> {
                 val canAuthenticate =
-                    featureBiometric.canAuthenticate(AuthenticatorType.DEVICE_CREDENTIAL)
+                    featureBiometric.canAuthenticate(FeatureAuthenticatorType.DEVICE_CREDENTIAL)
                 Log.d(
                     this::class.java.simpleName,
                     "can authenticate using device credential: $canAuthenticate"
@@ -158,13 +158,13 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     title = "Title - Weak Biometric",
                     description = "Description - Weak Biometric",
                     negativeText = "Cancel",
-                    type = AuthenticatorType.BIOMETRIC,
+                    type = FeatureAuthenticatorType.BIOMETRIC,
                     cancellationSignal = cancellationSignal,
                     callBack = object : FeatureBiometricCallBack {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Authenticate ${AuthenticatorType.BIOMETRIC}",
+                                "Successfully Authenticate ${FeatureAuthenticatorType.BIOMETRIC}",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
@@ -179,13 +179,13 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     title = "Encrypt Biometric",
                     description = "Authenticate using your credential",
                     negativeText = "Cancel",
-                    type = AuthenticatorType.DEVICE_CREDENTIAL,
+                    type = FeatureAuthenticatorType.DEVICE_CREDENTIAL,
                     cancellationSignal = cancellationSignal,
                     callBack = object : FeatureBiometricCallBack {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Authenticate ${AuthenticatorType.DEVICE_CREDENTIAL}",
+                                "Successfully Authenticate ${FeatureAuthenticatorType.DEVICE_CREDENTIAL}",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()

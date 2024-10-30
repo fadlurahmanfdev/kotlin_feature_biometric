@@ -1,6 +1,7 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
@@ -8,22 +9,27 @@ import android.os.Handler
 import android.os.Looper
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import android.util.Log
+import androidx.biometric.BiometricManager
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import javax.crypto.Cipher
 
 class FeatureAuthentication(private val context: Context) : FeatureAuthenticationRepository {
 
     private lateinit var fingerprintManager: FingerprintManager
+    private lateinit var biometricManager: BiometricManager
 
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             fingerprintManager =
                 context.getSystemService(Context.FINGERPRINT_SERVICE) as FingerprintManager
         }
+
+        biometricManager = BiometricManager.from(context)
     }
 
     private fun getCipher(): Cipher {
@@ -38,24 +44,72 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
-    override fun isSupportedFingerprint(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return fingerprintManager.isHardwareDetected
+    override fun isDeviceSupportFingerprint(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) || fingerprintManager.isHardwareDetected
         }
 
-        Log.d(this::class.java.simpleName, "OS not supported")
         return false
     }
 
-    override fun isFingerprintEnrolled(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return fingerprintManager.hasEnrolledFingerprints()
+    override fun isDeviceSupportFaceAuth(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) || context.packageManager.hasSystemFeature(
+                "com.samsung.android.bio.face"
+            )
         }
 
-        throw FeatureIdentityException(
-            code = ErrorConstant.OS_NOT_SUPPORTED,
-            message = "OS not supported"
-        )
+        return false
+    }
+
+    override fun isDeviceSupportBiometric(): Boolean {
+        return (isDeviceSupportFingerprint() || isDeviceSupportFaceAuth())
+    }
+
+    override fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus {
+        val authenticatorStatus: Int =  when (authenticatorType) {
+            FeatureAuthenticatorType.BIOMETRIC -> {
+                biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+            }
+
+            FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
+                biometricManager.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            }
+        }
+
+        return when (authenticatorStatus) {
+            BiometricManager.BIOMETRIC_SUCCESS -> {
+                FeatureAuthenticationStatus.SUCCESS
+            }
+
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                FeatureAuthenticationStatus.NO_HARDWARE
+            }
+
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                FeatureAuthenticationStatus.UNAVAILABLE
+            }
+
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                FeatureAuthenticationStatus.NONE_ENROLLED
+            }
+
+            BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> {
+                FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED
+            }
+
+            BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> {
+                FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION
+            }
+
+            else -> {
+                FeatureAuthenticationStatus.UNKNOWN
+            }
+        }
+    }
+
+    override fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean {
+        return checkAuthenticatorStatus(authenticatorType) == FeatureAuthenticationStatus.SUCCESS
     }
 
     override fun authenticate(

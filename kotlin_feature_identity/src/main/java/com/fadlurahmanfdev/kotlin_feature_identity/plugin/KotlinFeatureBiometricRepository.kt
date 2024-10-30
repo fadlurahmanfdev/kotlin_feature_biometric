@@ -4,19 +4,19 @@ import android.os.CancellationSignal
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 
 interface KotlinFeatureBiometricRepository {
     fun isDeviceSupportBiometric(): Boolean
     fun isDeviceSupportFaceAuthentication(): Boolean
-    fun canAuthenticate(type: AuthenticatorType): Boolean
-    fun checkAuthenticationStatus(type: AuthenticatorType): FeatureAuthenticationStatus
+    fun canAuthenticate(type: FeatureAuthenticatorType): Boolean
+    fun checkAuthenticationStatus(type: FeatureAuthenticatorType): FeatureAuthenticationStatus
     fun isBiometricChanged(alias: String): Boolean
     fun generateSecretKey(alias: String)
     fun deleteSecretKey(alias: String)
     fun authenticate(
-        type: AuthenticatorType,
+        type: FeatureAuthenticatorType,
         cancellationSignal: CancellationSignal,
         title: String,
         description: String,

@@ -22,7 +22,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAu
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import java.security.KeyStore
@@ -170,7 +170,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
         }
     }
 
-    private fun validateAuthenticateStatus(type: AuthenticatorType) {
+    private fun validateAuthenticateStatus(type: FeatureAuthenticatorType) {
         val authenticationStatus = checkAuthenticationStatus(type)
         val canAuthenticate = authenticationStatus == FeatureAuthenticationStatus.SUCCESS
         if (!canAuthenticate) {
@@ -282,7 +282,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
      *
      * @return The boolean indicate which the device can authenticate using biometric
      */
-    override fun canAuthenticate(type: AuthenticatorType): Boolean {
+    override fun canAuthenticate(type: FeatureAuthenticatorType): Boolean {
         return checkAuthenticationStatus(type) == FeatureAuthenticationStatus.SUCCESS
     }
 
@@ -313,9 +313,9 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
      *
      * @return The reason type indicating the result of the biometric or device credential authentication check.
      */
-    override fun checkAuthenticationStatus(type: AuthenticatorType): FeatureAuthenticationStatus {
+    override fun checkAuthenticationStatus(type: FeatureAuthenticatorType): FeatureAuthenticationStatus {
         val authenticators: Int = when (type) {
-            AuthenticatorType.BIOMETRIC -> {
+            FeatureAuthenticatorType.BIOMETRIC -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     BiometricManager.Authenticators.BIOMETRIC_WEAK
                 } else {
@@ -323,7 +323,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 }
             }
 
-            AuthenticatorType.DEVICE_CREDENTIAL -> {
+            FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
             }
         }
@@ -333,10 +333,10 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 FeatureAuthenticationStatus.SUCCESS
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
-                FeatureAuthenticationStatus.NO_BIOMETRIC_AVAILABLE
+                FeatureAuthenticationStatus.NO_HARDWARE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
-                FeatureAuthenticationStatus.BIOMETRIC_UNAVAILABLE
+                FeatureAuthenticationStatus.UNAVAILABLE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
                 FeatureAuthenticationStatus.NONE_ENROLLED
@@ -429,7 +429,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
      * ```
      */
     override fun authenticate(
-        type: AuthenticatorType,
+        type: FeatureAuthenticatorType,
         cancellationSignal: CancellationSignal,
         title: String,
         description: String,
@@ -437,11 +437,11 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
         callBack: FeatureBiometricCallBack,
     ) {
         val authenticator = when (type) {
-            AuthenticatorType.BIOMETRIC -> {
+            FeatureAuthenticatorType.BIOMETRIC -> {
                 BiometricManager.Authenticators.BIOMETRIC_WEAK
             }
 
-            AuthenticatorType.DEVICE_CREDENTIAL -> {
+            FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
             }
         }

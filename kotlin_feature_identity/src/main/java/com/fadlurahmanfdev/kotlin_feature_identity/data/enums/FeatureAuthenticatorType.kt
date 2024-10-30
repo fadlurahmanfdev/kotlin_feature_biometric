@@ -1,6 +1,6 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.data.enums
 
-enum class AuthenticatorType {
+enum class FeatureAuthenticatorType {
     /**
      * Represents biometric authentication using weak biometric
      */
