@@ -6,6 +6,7 @@ object KotlinFeatureErrorAuthentication {
     const val CIPHER_MISSING = "CIPHER_MISSING"
     const val BAD_PADDING = "BAD_PADDING"
     const val NOT_SUPPORTED_ANDROID_VERSION = "NOT_SUPPORTED_ANDROID_VERSION"
+    const val CANT_AUTHENTICATE = "CANT_AUTHENTICATE"
 
 
     const val GENERAL_00 = "GENERAL_00"

@@ -16,7 +16,6 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometri
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
 import javax.crypto.Cipher
@@ -165,7 +164,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Authenticate ${BiometricType.WEAK}",
+                                "Successfully Authenticate ${AuthenticatorType.BIOMETRIC}",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
@@ -186,7 +185,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Authenticate ${BiometricType.DEVICE_CREDENTIAL}",
+                                "Successfully Authenticate ${AuthenticatorType.DEVICE_CREDENTIAL}",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()

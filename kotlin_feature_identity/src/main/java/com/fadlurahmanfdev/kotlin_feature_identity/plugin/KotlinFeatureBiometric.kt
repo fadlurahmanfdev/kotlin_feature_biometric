@@ -1,6 +1,8 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.app.Activity
+import android.app.KeyguardManager
+import android.content.Context
 import android.content.DialogInterface.OnClickListener
 import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager.Authenticators
@@ -123,7 +125,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 }.build()
         }
 
-        private fun getBiometricPrompt(
+        private fun getPromptInfoAndroidLollipop(
             title: String,
             authenticator: Int,
             description: String,
@@ -155,7 +157,7 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 .build()
         }
 
-        private fun getAndroidXBiometricPrompt(
+        private fun getBiometricPromptAndroidLollipop(
             fragmentActivity: FragmentActivity,
             executor: Executor,
             callBack: androidx.biometric.BiometricPrompt.AuthenticationCallback,
@@ -164,6 +166,17 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 fragmentActivity,
                 executor,
                 callBack,
+            )
+        }
+    }
+
+    private fun validateAuthenticateStatus(type: AuthenticatorType) {
+        val authenticationStatus = checkAuthenticationStatus(type)
+        val canAuthenticate = authenticationStatus == FeatureAuthenticationStatus.SUCCESS
+        if (!canAuthenticate) {
+            throw FeatureBiometricException(
+                code = KotlinFeatureErrorAuthentication.CANT_AUTHENTICATE,
+                message = "Cannot authenticate using $type because $authenticationStatus"
             )
         }
     }
@@ -432,6 +445,10 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
             }
         }
+
+        validateAuthenticateStatus(type)
+
+        val keyguardManager = activity.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         val executor = ContextCompat.getMainExecutor(activity)
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
@@ -480,14 +497,14 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
             }
 
             else -> {
-                val promptInfo = getBiometricPrompt(
+                val promptInfo = getPromptInfoAndroidLollipop(
                     title = title,
                     description = description,
                     authenticator = authenticator,
                     negativeText = negativeText
                 )
 
-                val biometricPrompt = getAndroidXBiometricPrompt(
+                val biometricPrompt = getBiometricPromptAndroidLollipop(
                     fragmentActivity = activity as FragmentActivity,
                     executor = executor,
                     callBack = object :
@@ -648,14 +665,14 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 }
 
                 else -> {
-                    val promptInfo = getBiometricPrompt(
+                    val promptInfo = getPromptInfoAndroidLollipop(
                         title = title,
                         description = description,
                         authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                         negativeText = negativeText
                     )
 
-                    val biometricPrompt = getAndroidXBiometricPrompt(
+                    val biometricPrompt = getBiometricPromptAndroidLollipop(
                         fragmentActivity = activity as FragmentActivity,
                         executor = executor,
                         callBack = object :
@@ -859,14 +876,14 @@ class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiom
                 }
 
                 else -> {
-                    val promptInfo = getBiometricPrompt(
+                    val promptInfo = getPromptInfoAndroidLollipop(
                         title = title,
                         description = description,
                         authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                         negativeText = negativeText
                     )
 
-                    val biometricPrompt = getAndroidXBiometricPrompt(
+                    val biometricPrompt = getBiometricPromptAndroidLollipop(
                         fragmentActivity = activity as FragmentActivity,
                         executor = executor,
                         callBack = object :
