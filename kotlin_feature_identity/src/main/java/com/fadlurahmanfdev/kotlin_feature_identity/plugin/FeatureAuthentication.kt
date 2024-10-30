@@ -15,7 +15,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthentic
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import javax.crypto.Cipher
 
-class FeatureFingerprint(private val context: Context) : FeatureFingerprintRepository {
+class FeatureAuthentication(private val context: Context) : FeatureAuthenticationRepository {
 
     private lateinit var fingerprintManager: FingerprintManager
 
