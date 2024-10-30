@@ -1,6 +1,6 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.data.enums
 
-enum class FeatureBiometricStatus {
+enum class FeatureAuthenticationStatus {
     /**
      * Can authenticate using biometrics.
      */

@@ -15,6 +15,7 @@ import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
@@ -26,15 +27,27 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
     private val features: List<FeatureModel> = listOf<FeatureModel>(
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Have Biometric?",
-            desc = "Have Biometric?",
-            enum = "HAVE_BIOMETRIC"
+            title = "Is Device Support Biometric?",
+            desc = "Check whether device support biometric",
+            enum = "DEVICE_SUPPORT_BIOMETRIC"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Can Authenticate",
-            desc = "Can Authenticate",
-            enum = "CAN_AUTHENTICATE"
+            title = "Can Authenticate Using Biometric",
+            desc = "Check whether device can authenticate using biometric",
+            enum = "CAN_AUTHENTICATE_USING_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Can Authenticate Using Device Credential",
+            desc = "Check whether device can authenticate using Device Credential",
+            enum = "CAN_AUTHENTICATE_USING_DEVICE_CREDENTIAL"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "---------------------------",
+            desc = "---------------------------",
+            enum = "-"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
@@ -44,15 +57,27 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Prompt Strong Biometric",
-            desc = "Prompt Strong Biometric (Fingerprint)",
-            enum = "PROMPT_STRONG_BIOMETRIC"
-        ),
-        FeatureModel(
-            featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Prompt Credential Biometric",
             desc = "Prompt Credential Biometric (Device Password)",
             enum = "PROMPT_CREDENTIAL_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "---------------------------",
+            desc = "---------------------------",
+            enum = "-"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Generate Secret Key",
+            desc = "Generate Secret Key",
+            enum = "GENERATE_SECRET_KEY"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Is Biometric Changed?",
+            desc = "Check whether new fingerprint/biometric added/changed",
+            enum = "IS_BIOMETRIC_CHANGED"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
@@ -102,70 +127,45 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
     override fun onClicked(item: FeatureModel) {
         when (item.enum) {
-            "HAVE_BIOMETRIC" -> {
-                val isHaveFeatureBiometric = featureBiometric.haveFeatureBiometric()
+            "DEVICE_SUPPORT_BIOMETRIC" -> {
+                val isDeviceSupportBiometric = featureBiometric.isDeviceSupportBiometric()
                 Log.d(
                     this::class.java.simpleName,
-                    "Device is have feature biometric: $isHaveFeatureBiometric"
+                    "is device support biometric: $isDeviceSupportBiometric"
                 )
             }
 
-            "CAN_AUTHENTICATE" -> {
-                val canAuthenticateBiometricWeak =
-                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK)
-                val canAuthenticateBiometricStrong =
-                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                val canAuthenticateBiometricDeviceCredential =
-                    featureBiometric.canAuthenticate(androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            "CAN_AUTHENTICATE_USING_BIOMETRIC" -> {
+                val canAuthenticate =
+                    featureBiometric.canAuthenticate(AuthenticatorType.BIOMETRIC)
                 Log.d(
                     this::class.java.simpleName,
-                    "CAN AUTHENTICATE BIOMETRIC WEAK -> ${canAuthenticateBiometricWeak}"
+                    "can authenticate using biometric: $canAuthenticate"
                 )
+            }
+
+            "CAN_AUTHENTICATE_USING_DEVICE_CREDENTIAL" -> {
+                val canAuthenticate =
+                    featureBiometric.canAuthenticate(AuthenticatorType.DEVICE_CREDENTIAL)
                 Log.d(
                     this::class.java.simpleName,
-                    "CAN AUTHENTICATE BIOMETRIC STRONG -> ${canAuthenticateBiometricStrong}"
-                )
-                Log.d(
-                    this::class.java.simpleName,
-                    "CAN AUTHENTICATE BIOMETRIC DEVICE CREDENTIAL -> ${canAuthenticateBiometricDeviceCredential}"
+                    "can authenticate using device credential: $canAuthenticate"
                 )
             }
 
             "PROMPT_WEAK_BIOMETRIC" -> {
-
                 cancellationSignal = CancellationSignal()
                 featureBiometric.authenticate(
-                    title = "Encrypt Biometric",
-                    description = "Authenticate using your biometric",
+                    title = "Title - Weak Biometric",
+                    description = "Description - Weak Biometric",
                     negativeText = "Cancel",
+                    type = AuthenticatorType.BIOMETRIC,
                     cancellationSignal = cancellationSignal,
-                    type = BiometricType.WEAK,
                     callBack = object : FeatureBiometricCallBack {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Successfully Authenticate ${BiometricType.WEAK}",
-                                Toast.LENGTH_SHORT
-                            )
-                            toast.show()
-                        }
-                    }
-                )
-            }
-
-            "PROMPT_STRONG_BIOMETRIC" -> {
-                cancellationSignal = CancellationSignal()
-                featureBiometric.authenticate(
-                    title = "Encrypt Biometric",
-                    description = "Authenticate using your fingerprint",
-                    negativeText = "Cancel",
-                    cancellationSignal = cancellationSignal,
-                    type = BiometricType.STRONG,
-                    callBack = object : FeatureBiometricCallBack {
-                        override fun onSuccessAuthenticate() {
-                            val toast = Toast.makeText(
-                                this@MainActivity,
-                                "Successfully Authenticate ${BiometricType.STRONG}",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
@@ -180,8 +180,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     title = "Encrypt Biometric",
                     description = "Authenticate using your credential",
                     negativeText = "Cancel",
+                    type = AuthenticatorType.DEVICE_CREDENTIAL,
                     cancellationSignal = cancellationSignal,
-                    type = BiometricType.DEVICE_CREDENTIAL,
                     callBack = object : FeatureBiometricCallBack {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
@@ -193,6 +193,21 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                         }
                     }
                 )
+            }
+
+            "GENERATE_SECRET_KEY" -> {
+                featureBiometric.generateSecretKey("fadlurahmanfdev")
+                val toast = Toast.makeText(
+                    this@MainActivity,
+                    "Successfully generate secret key",
+                    Toast.LENGTH_SHORT
+                )
+                toast.show()
+            }
+
+            "IS_BIOMETRIC_CHANGED" -> {
+                val isBiometricChanged = featureBiometric.isBiometricChanged("fadlurahmanfdev")
+                Log.d(this::class.java.simpleName, "is biometric changed: $isBiometricChanged")
             }
 
             "PROMPT_ENCRYPT_SECURE_BIOMETRIC" -> {

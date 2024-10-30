@@ -16,11 +16,12 @@ import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.BiometricType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureBiometricStatus
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.AuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import java.security.KeyStore
 import java.util.concurrent.Executor
@@ -30,23 +31,8 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
-class KotlinFeatureBiometric(private val activity: Activity) {
+class KotlinFeatureBiometric(private val activity: Activity) : KotlinFeatureBiometricRepository {
     companion object {
-        @RequiresApi(Build.VERSION_CODES.M)
-        private fun generateSecretKey(keyGenParameterSpec: KeyGenParameterSpec): SecretKey {
-            val keyGenerator = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore"
-            )
-            keyGenerator.init(keyGenParameterSpec)
-            return keyGenerator.generateKey()
-        }
-
-        private fun generateSecretKey(): SecretKey {
-            val keyGenerator = KeyGenerator.getInstance("AES")
-            keyGenerator.init(256)
-            return keyGenerator.generateKey()
-        }
-
         private fun getCipher(): Cipher {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Cipher.getInstance(
@@ -57,6 +43,34 @@ class KotlinFeatureBiometric(private val activity: Activity) {
             } else {
                 Cipher.getInstance("AES/CBC/PKCS7Padding")
             }
+        }
+
+        private fun getSecretKey(alias: String): SecretKey? {
+            var secretKey: SecretKey? = null
+            val keyStore = KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+            try {
+                val existingSecretKey =
+                    keyStore.getKey(alias, null) as SecretKey?
+                if (existingSecretKey != null) {
+                    Log.d(
+                        this::class.java.simpleName,
+                        "successfully use existing key - $alias"
+                    )
+                    secretKey = existingSecretKey
+                }
+            } catch (e: Exception) {
+                Log.d(
+                    this::class.java.simpleName,
+                    "failed get existing key $alias: ${e.message}"
+                )
+                throw FeatureBiometricException(
+                    code = KotlinFeatureErrorAuthentication.GENERAL_01,
+                    message = e.message
+                )
+            }
+
+            return secretKey
         }
 
         @RequiresApi(Build.VERSION_CODES.M)
@@ -73,62 +87,10 @@ class KotlinFeatureBiometric(private val activity: Activity) {
             }.build()
         }
 
-        private fun getSecretKey(alias: String): SecretKey {
-            val keyStore = KeyStore.getInstance("AndroidKeyStore")
-            keyStore.load(null)
-            try {
-                val existingSecretKey =
-                    keyStore.getKey(alias, null) as SecretKey?
-                if (existingSecretKey != null) {
-                    Log.d(
-                        this::class.java.simpleName,
-                        "successfully use existing key - $alias"
-                    )
-                    return existingSecretKey
-                }
-            } catch (e: Exception) {
-                throw FeatureBiometricException(code = "GET_EXISTING_KEY", message = e.message)
-            }
-
-            return when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
-                    val key = generateSecretKey(generateKeyGenParameterSpec(alias))
-                    Log.d(
-                        this::class.java.simpleName,
-                        "successfully generate secret key with parameter spec $alias"
-                    )
-                    key
-                }
-
-                else -> {
-                    val key = generateSecretKey()
-                    Log.d(
-                        this::class.java.simpleName,
-                        "successfully generate secret key with $alias"
-                    )
-                    key
-                }
-            }
-        }
-
-        private fun deleteSecretKey(alias: String) {
-            val keyStore = KeyStore.getInstance("AndroidKeyStore")
-            keyStore.load(null)
-            try {
-                keyStore.deleteEntry(alias)
-            } catch (e: Exception) {
-                Log.e(
-                    KotlinFeatureBiometric::class.java.simpleName,
-                    "failed to delete secret key: $alias"
-                )
-                throw FeatureBiometricException(code = "GET_EXISTING_KEY", message = e.message)
-            }
-        }
-
         @RequiresApi(Build.VERSION_CODES.P)
-        private fun getBiometricPromptP(
+        private fun getBiometricPromptAndroidP(
             activity: Activity,
-            type: BiometricType,
+            authenticator: Int,
             title: String,
             description: String,
             negativeText: String,
@@ -137,22 +99,22 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         ): BiometricPrompt {
             return BiometricPrompt.Builder(activity).setTitle(title).setDescription(description)
                 .apply {
-                    when (type) {
-                        BiometricType.WEAK -> {
+                    when (authenticator) {
+                        Authenticators.BIOMETRIC_WEAK -> {
                             setNegativeButton(negativeText, executor, listener)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(Authenticators.BIOMETRIC_WEAK)
                             }
                         }
 
-                        BiometricType.STRONG -> {
+                        Authenticators.BIOMETRIC_STRONG -> {
                             setNegativeButton(negativeText, executor, listener)
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(Authenticators.BIOMETRIC_STRONG)
                             }
                         }
 
-                        BiometricType.DEVICE_CREDENTIAL -> {
+                        Authenticators.DEVICE_CREDENTIAL -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(Authenticators.DEVICE_CREDENTIAL)
                             }
@@ -161,29 +123,29 @@ class KotlinFeatureBiometric(private val activity: Activity) {
                 }.build()
         }
 
-        private fun getAndroidXPromptInfo(
+        private fun getBiometricPrompt(
             title: String,
-            type: BiometricType,
+            authenticator: Int,
             description: String,
             negativeText: String,
         ): androidx.biometric.BiometricPrompt.PromptInfo {
             return androidx.biometric.BiometricPrompt.PromptInfo.Builder().setTitle(title)
                 .setDescription(description).setNegativeButtonText(negativeText)
                 .apply {
-                    when (type) {
-                        BiometricType.WEAK -> {
+                    when (authenticator) {
+                        BiometricManager.Authenticators.BIOMETRIC_WEAK -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
                             }
                         }
 
-                        BiometricType.STRONG -> {
+                        BiometricManager.Authenticators.BIOMETRIC_STRONG -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
                             }
                         }
 
-                        BiometricType.DEVICE_CREDENTIAL -> {
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                 setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                             }
@@ -207,33 +169,99 @@ class KotlinFeatureBiometric(private val activity: Activity) {
     }
 
     /**
-     * Determines the device's have feature biometric
+     * This is the step where user should generate secret key before user can use authenticate secure encrypt/decrypt.
      *
-     * @return The boolean indicate which the device have feature biometric
+     * User no need to know the secret key, and therefore, its not return any value.
+     *
+     * @param alias the alias of the secret key
+     *
+     * @throws KotlinFeatureErrorAuthentication.KEY_PERMANENTLY_INVALIDATED if new biometric/changed biometric detected.
+     * @throws KotlinFeatureErrorAuthentication.GENERAL_00 if general exception happen.
      */
-    fun haveFeatureBiometric(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) || activity.packageManager.hasSystemFeature(
-                PackageManager.FEATURE_FACE
-            )
+    override fun generateSecretKey(alias: String) {
+        val cipher = getCipher()
+        var secretKey: SecretKey? = getSecretKey(alias)
+
+        if (secretKey != null) {
+            Log.d(this::class.java.simpleName, "secret key $alias already exist")
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val keyGenerator =
+                KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+            keyGenerator.init(generateKeyGenParameterSpec(alias))
+            secretKey = keyGenerator.generateKey()
         } else {
-            false
+            val keyGenerator = KeyGenerator.getInstance("AES")
+            keyGenerator.init(256)
+            secretKey = keyGenerator.generateKey()
+        }
+
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e is KeyPermanentlyInvalidatedException) {
+                    throw FeatureBiometricException(
+                        code = KotlinFeatureErrorAuthentication.KEY_PERMANENTLY_INVALIDATED,
+                        message = e.message
+                    )
+                }
+            }
+            throw FeatureBiometricException(
+                code = KotlinFeatureErrorAuthentication.GENERAL_00,
+                message = e.message
+            )
+        }
+    }
+
+    override fun deleteSecretKey(alias: String) {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore")
+        keyStore.load(null)
+        try {
+            keyStore.deleteEntry(alias)
+        } catch (e: Exception) {
+            Log.e(
+                KotlinFeatureBiometric::class.java.simpleName,
+                "failed to delete secret key: $alias"
+            )
+            throw FeatureBiometricException(code = "GET_EXISTING_KEY", message = e.message)
         }
     }
 
     /**
-     * Determines the device's have feature biometric
+     * Determines the device's support biometric feature, either fingerprint or face authentication.
      *
-     * @return The boolean indicate which the device have feature biometric
+     * @return true, if device support biometric, otherwise is false.
      */
-    fun haveFaceDetection(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) or activity.packageManager.hasSystemFeature(
-                "com.samsung.android.bio.face"
-            )
-        } else {
-            false
+    override fun isDeviceSupportBiometric(): Boolean {
+        var isHaveFingerprint = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            isHaveFingerprint =
+                activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
         }
+        val isHaveFaceAuth = isDeviceSupportFaceAuthentication()
+        return isHaveFingerprint || isHaveFaceAuth
+    }
+
+    /**
+     * Determines the device's support face authentication.
+     *
+     * @return true, if device support face authentication, otherwise is false.
+     */
+    override fun isDeviceSupportFaceAuthentication(): Boolean {
+        val isHaveFaceAuth = false
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)
+        }
+
+        if (!isHaveFaceAuth) {
+            activity.packageManager.hasSystemFeature("com.samsung.android.bio.face")
+        }
+
+        return isHaveFaceAuth
     }
 
     /**
@@ -241,8 +269,8 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * @return The boolean indicate which the device can authenticate using biometric
      */
-    fun canAuthenticate(authenticators: Int = androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK or androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL): Boolean {
-        return checkBiometricStatus(authenticators) == FeatureBiometricStatus.SUCCESS
+    override fun canAuthenticate(type: AuthenticatorType): Boolean {
+        return checkAuthenticationStatus(type) == FeatureAuthenticationStatus.SUCCESS
     }
 
     /**
@@ -253,13 +281,13 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * It checks for the following authentication states:
      *
-     * - `FeatureBiometricStatus.SUCCESS`: Biometric authentication is available and the user is enrolled.
-     * - `FeatureBiometricStatus.NO_BIOMETRIC_AVAILABLE`: No biometric hardware is available on the device.
-     * - `FeatureBiometricStatus.BIOMETRIC_UNAVAILABLE`: Biometric hardware is temporarily unavailable (e.g., being used by another process).
-     * - `FeatureBiometricStatus.NONE_ENROLLED`: Biometric hardware is available, but the user has not enrolled any biometric credentials.
-     * - `FeatureBiometricStatus.UNKNOWN`: An unknown error occurred during the authentication capability check.
+     * - `FeatureAuthenticationStatus.SUCCESS`: Biometric authentication is available and the user is enrolled.
+     * - `FeatureAuthenticationStatus.NO_BIOMETRIC_AVAILABLE`: No biometric hardware is available on the device.
+     * - `FeatureAuthenticationStatus.BIOMETRIC_UNAVAILABLE`: Biometric hardware is temporarily unavailable (e.g., being used by another process).
+     * - `FeatureAuthenticationStatus.NONE_ENROLLED`: Biometric hardware is available, but the user has not enrolled any biometric credentials.
+     * - `FeatureAuthenticationStatus.UNKNOWN`: An unknown error occurred during the authentication capability check.
      *
-     * If the function returns `CanAuthenticateReasonType.NONE_ENROLLED`, you can guide the user to enroll their biometrics
+     * If the function returns `FeatureAuthenticationStatus.NONE_ENROLLED`, you can guide the user to enroll their biometrics
      * by starting the biometric enrollment intent with:
      *
      * ```kotlin
@@ -272,24 +300,227 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      *
      * @return The reason type indicating the result of the biometric or device credential authentication check.
      */
-    fun checkBiometricStatus(authenticators: Int): FeatureBiometricStatus {
+    override fun checkAuthenticationStatus(type: AuthenticatorType): FeatureAuthenticationStatus {
+        val authenticators: Int = when (type) {
+            AuthenticatorType.BIOMETRIC -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    BiometricManager.Authenticators.BIOMETRIC_WEAK
+                } else {
+                    BiometricManager.Authenticators.BIOMETRIC_WEAK
+                }
+            }
+
+            AuthenticatorType.DEVICE_CREDENTIAL -> {
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            }
+        }
         val biometricManager = androidx.biometric.BiometricManager.from(activity)
         return when (biometricManager.canAuthenticate(authenticators)) {
             androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS ->
-                FeatureBiometricStatus.SUCCESS
+                FeatureAuthenticationStatus.SUCCESS
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
-                FeatureBiometricStatus.NO_BIOMETRIC_AVAILABLE
+                FeatureAuthenticationStatus.NO_BIOMETRIC_AVAILABLE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
-                FeatureBiometricStatus.BIOMETRIC_UNAVAILABLE
+                FeatureAuthenticationStatus.BIOMETRIC_UNAVAILABLE
 
             androidx.biometric.BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                FeatureBiometricStatus.NONE_ENROLLED
+                FeatureAuthenticationStatus.NONE_ENROLLED
             }
 
             else -> {
-                FeatureBiometricStatus.UNKNOWN
+                FeatureAuthenticationStatus.UNKNOWN
+            }
+        }
+    }
+
+    /**
+     * Detect whether the biometric changed.
+     *
+     * this function return true if the biometric added into a device.
+     *
+     * @param alias The alias used to retrieve the secret key from the Android keystore.
+     *
+     * Example usage for encryption:
+     *
+     * ```kotlin
+     * val isBiometricChanged = isBiometricChanged(
+     *     alias = "myKeyAlias",
+     * )
+     * ```
+     */
+    override fun isBiometricChanged(alias: String): Boolean {
+        val cipher = getCipher()
+        val secretKey = getSecretKey(alias)
+            ?: throw FeatureBiometricException(
+                code = KotlinFeatureErrorAuthentication.SECRET_KEY_MISSING,
+                message = "Cannot check whether biometric changed because the secret key is missing"
+            )
+
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, secretKey)
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e is KeyPermanentlyInvalidatedException) {
+                    return true
+                }
+            } else {
+                throw FeatureBiometricException(
+                    code = KotlinFeatureErrorAuthentication.GENERAL_02,
+                    e.message
+                )
+            }
+        }
+        return false
+    }
+
+    /**
+     * Initiates a biometric authentication process.
+     *
+     * This function sets up and prompts the user for biometric authentication (or device credentials, depending on the device’s support).
+     * If authentication succeeds, the provided cipher will be initialized for decryption.
+     *
+     * The function adapts the authentication mechanism based on the device's Android version:
+     *
+     * - **Android P (API 28) and above**: Uses the updated `BiometricPrompt` API for stronger biometric security.
+     * - **Android below P**: Uses the older `androidx.biometric.BiometricPrompt` API.
+     *
+     * On successful authentication, the `onSuccessAuthenticate` callback is triggered.
+     * If an error occurs or authentication fails, appropriate error and failure callbacks will be triggered.
+     *
+     * @param type The type of biometric, it could be BiometricType.WEAK
+     * @param title The title of the biometric prompt displayed to the user.
+     * @param description A description message for the biometric prompt, explaining the purpose of authentication.
+     * @param negativeText The text for the negative button (cancel button) in the biometric prompt.
+     * @param cancellationSignal A signal to cancel the authentication if needed, such as when the user cancels the operation.
+     * @param callBack The callback interface to handle success, failure, and error scenarios during the authentication process.
+     *
+     * The following events are handled through the callback:
+     * - **onSuccessAuthenticate()**: Called when authentication is successful.
+     * - **onFailedAuthenticate()**: Called when authentication fails (e.g., user did not pass biometric validation).
+     * - **onErrorAuthenticate(exception: FeatureBiometricException)**: Called when an error occurs, such as an issue with the cipher or the authentication process.
+     *
+     * Example usage for encryption:
+     *
+     * ```kotlin
+     * authenticate(
+     *     type = BiometricType.WEAK,
+     *     alias = "myKeyAlias",
+     *     title = "Secure Login",
+     *     description = "Authenticate to encrypt your data",
+     *     negativeText = "Cancel",
+     *     cancellationSignal = CancellationSignal(),
+     *     callBack = myBiometricCallback
+     * )
+     * ```
+     */
+    override fun authenticate(
+        type: AuthenticatorType,
+        cancellationSignal: CancellationSignal,
+        title: String,
+        description: String,
+        negativeText: String,
+        callBack: FeatureBiometricCallBack,
+    ) {
+        val authenticator = when (type) {
+            AuthenticatorType.BIOMETRIC -> {
+                BiometricManager.Authenticators.BIOMETRIC_WEAK
+            }
+
+            AuthenticatorType.DEVICE_CREDENTIAL -> {
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            }
+        }
+        val executor = ContextCompat.getMainExecutor(activity)
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
+                val biometricPrompt = getBiometricPromptAndroidP(
+                    activity = activity,
+                    title = title,
+                    description = description,
+                    negativeText = negativeText,
+                    executor = executor,
+                    authenticator = authenticator,
+                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
+                )
+
+                biometricPrompt.authenticate(
+                    cancellationSignal,
+                    executor,
+                    object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            callBack.onSuccessAuthenticate()
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            if (errorCode == 10) {
+                                callBack.onCanceled();
+                            } else {
+                                callBack.onErrorAuthenticate(
+                                    FeatureBiometricException(
+                                        code = "$errorCode",
+                                        message = errString?.toString()
+                                    )
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+
+            else -> {
+                val promptInfo = getBiometricPrompt(
+                    title = title,
+                    description = description,
+                    authenticator = authenticator,
+                    negativeText = negativeText
+                )
+
+                val biometricPrompt = getAndroidXBiometricPrompt(
+                    fragmentActivity = activity as FragmentActivity,
+                    executor = executor,
+                    callBack = object :
+                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                            super.onAuthenticationSucceeded(result)
+                            callBack.onSuccessAuthenticate()
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            if (errorCode == 10) {
+                                callBack.onCanceled();
+                            } else {
+                                callBack.onErrorAuthenticate(
+                                    FeatureBiometricException(
+                                        code = "$errorCode",
+                                        message = errString.toString()
+                                    )
+                                )
+                            }
+                        }
+                    }
+                )
+                biometricPrompt.authenticate(promptInfo)
             }
         }
     }
@@ -334,7 +565,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * )
      * ```
      */
-    fun authenticateSecureEncrypt(
+    override fun authenticateSecureEncrypt(
         alias: String,
         title: String,
         description: String,
@@ -342,170 +573,156 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         cancellationSignal: CancellationSignal,
         callBack: FeatureBiometricEncryptSecureCallBack,
     ) {
-        val executor = ContextCompat.getMainExecutor(activity)
-        val cipher = getCipher()
-        var secretKey = getSecretKey(alias)
         try {
+            val executor = ContextCompat.getMainExecutor(activity)
+            val cipher = getCipher()
+            val secretKey = getSecretKey(alias)
+                ?: throw FeatureBiometricException(
+                    code = KotlinFeatureErrorAuthentication.SECRET_KEY_MISSING,
+                    message = "Cannot authenticate secure encrypt because the secret key is missing"
+                )
+
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-        } catch (e: Exception) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (e is KeyPermanentlyInvalidatedException) {
-                    Log.w(
-                        KotlinFeatureBiometric::class.java.simpleName,
-                        "alias key $alias is already invalid, try to delete secret key & re init again"
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
+                    val biometricPrompt = getBiometricPromptAndroidP(
+                        activity = activity,
+                        title = title,
+                        description = description,
+                        negativeText = negativeText,
+                        executor = executor,
+                        authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                        listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
                     )
-                    deleteSecretKey(alias)
-                    secretKey = getSecretKey(alias)
-                    try {
-                        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-                    } catch (e: KeyPermanentlyInvalidatedException) {
-                        Log.e(
-                            KotlinFeatureBiometric::class.java.simpleName,
-                            "alias key $alias is already invalid"
-                        )
-                        return
-                    }
+
+                    biometricPrompt.authenticate(
+                        BiometricPrompt.CryptoObject(cipher),
+                        cancellationSignal,
+                        executor,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                                super.onAuthenticationSucceeded(result)
+                                val currentCipher = result?.cryptoObject?.cipher
+                                if (currentCipher == null) {
+                                    callBack.onErrorAuthenticate(
+                                        exception = FeatureBiometricException(
+                                            code = KotlinFeatureErrorAuthentication.CIPHER_MISSING,
+                                            message = "Cannot encrypt because the cipher is missing"
+                                        )
+                                    )
+                                    return
+                                }
+
+                                val encodedIvKey =
+                                    Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
+
+                                callBack.onSuccessAuthenticateEncryptSecureBiometric(
+                                    cipher = cipher,
+                                    encodedIvKey = encodedIvKey
+                                )
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                super.onAuthenticationFailed()
+                                callBack.onFailedAuthenticate()
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence?
+                            ) {
+                                super.onAuthenticationError(errorCode, errString)
+                                if (errorCode == 10) {
+                                    callBack.onCanceled()
+                                } else {
+                                    callBack.onErrorAuthenticate(
+                                        FeatureBiometricException(
+                                            code = "$errorCode",
+                                            message = errString?.toString()
+                                        )
+                                    )
+                                }
+                            }
+                        },
+                    )
                 }
-            } else {
-                callBack.onErrorAuthenticate(
-                    FeatureBiometricException(
-                        code = "INIT_CIPHER",
-                        message = e.message
+
+                else -> {
+                    val promptInfo = getBiometricPrompt(
+                        title = title,
+                        description = description,
+                        authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                        negativeText = negativeText
                     )
-                )
-                return
+
+                    val biometricPrompt = getAndroidXBiometricPrompt(
+                        fragmentActivity = activity as FragmentActivity,
+                        executor = executor,
+                        callBack = object :
+                            androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                                super.onAuthenticationSucceeded(result)
+                                val currentCipher = result.cryptoObject?.cipher
+
+                                if (currentCipher == null) {
+                                    callBack.onErrorAuthenticate(
+                                        exception = FeatureBiometricException(
+                                            code = KotlinFeatureErrorAuthentication.CIPHER_MISSING,
+                                            message = "Cannot encrypt because the cipher is missing"
+                                        )
+                                    )
+                                    return
+                                }
+
+                                val encodedIvKey =
+                                    Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
+
+                                callBack.onSuccessAuthenticateEncryptSecureBiometric(
+                                    cipher = cipher,
+                                    encodedIvKey = encodedIvKey
+                                )
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                super.onAuthenticationFailed()
+                                callBack.onFailedAuthenticate()
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence
+                            ) {
+                                super.onAuthenticationError(errorCode, errString)
+                                if (errorCode == 10) {
+                                    callBack.onCanceled()
+                                } else {
+                                    callBack.onErrorAuthenticate(
+                                        FeatureBiometricException(
+                                            code = "$errorCode",
+                                            message = errString.toString()
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    )
+                    biometricPrompt.authenticate(
+                        promptInfo,
+                        androidx.biometric.BiometricPrompt.CryptoObject(cipher)
+                    )
+                }
             }
+        } catch (e: FeatureBiometricException) {
+            callBack.onErrorAuthenticate(e)
+        } catch (e: Exception) {
+            callBack.onErrorAuthenticate(
+                FeatureBiometricException(
+                    code = KotlinFeatureErrorAuthentication.GENERAL_03,
+                    message = e.message
+                )
+            )
         }
 
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
-                val biometricPrompt = getBiometricPromptP(
-                    activity = activity,
-                    title = title,
-                    description = description,
-                    negativeText = negativeText,
-                    executor = executor,
-                    type = BiometricType.STRONG,
-                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
-                )
-
-                biometricPrompt.authenticate(
-                    BiometricPrompt.CryptoObject(cipher),
-                    cancellationSignal,
-                    executor,
-                    object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-                            super.onAuthenticationSucceeded(result)
-                            val currentCipher = result?.cryptoObject?.cipher
-                            if (currentCipher == null) {
-                                callBack.onErrorAuthenticate(
-                                    exception = FeatureBiometricException(
-                                        code = "CIPHER_MISSING_00",
-                                        message = "Cipher missing"
-                                    )
-                                )
-                                return
-                            }
-
-                            val encodedIvKey =
-                                Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
-
-                            callBack.onSuccessAuthenticateEncryptSecureBiometric(
-                                cipher = cipher,
-                                encodedIvKey = encodedIvKey
-                            )
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence?
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled()
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString?.toString()
-                                    )
-                                )
-                            }
-                        }
-                    },
-                )
-            }
-
-            else -> {
-                val promptInfo = getAndroidXPromptInfo(
-                    title = title,
-                    description = description,
-                    type = BiometricType.STRONG,
-                    negativeText = negativeText
-                )
-
-                val biometricPrompt = getAndroidXBiometricPrompt(
-                    fragmentActivity = activity as FragmentActivity,
-                    executor = executor,
-                    callBack = object :
-                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
-                            super.onAuthenticationSucceeded(result)
-                            val currentCipher = result.cryptoObject?.cipher
-
-                            if (currentCipher == null) {
-                                callBack.onErrorAuthenticate(
-                                    exception = FeatureBiometricException(
-                                        code = "CIPHER_MISSING_00",
-                                        message = "Cipher missing"
-                                    )
-                                )
-                                return
-                            }
-
-                            val encodedIvKey =
-                                Base64.encodeToString(currentCipher.iv, Base64.NO_WRAP)
-
-                            callBack.onSuccessAuthenticateEncryptSecureBiometric(
-                                cipher = cipher,
-                                encodedIvKey = encodedIvKey
-                            )
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled()
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString.toString()
-                                    )
-                                )
-                            }
-                        }
-                    }
-                )
-                biometricPrompt.authenticate(
-                    promptInfo,
-                    androidx.biometric.BiometricPrompt.CryptoObject(cipher)
-                )
-            }
-        }
     }
 
     /**
@@ -549,7 +766,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
      * )
      * ```
      */
-    fun authenticateSecureDecrypt(
+    override fun authenticateSecureDecrypt(
         alias: String,
         encodedIvKey: String,
         title: String,
@@ -558,279 +775,147 @@ class KotlinFeatureBiometric(private val activity: Activity) {
         cancellationSignal: CancellationSignal,
         callBack: FeatureBiometricDecryptSecureCallBack,
     ) {
-        val executor = ContextCompat.getMainExecutor(activity)
-        val cipher = getCipher()
-        val secretKey = getSecretKey(alias)
         try {
-            val ivKey = Base64.decode(encodedIvKey, Base64.NO_WRAP)
-            val ivSpec = IvParameterSpec(ivKey)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
-        } catch (e: Exception) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (e is KeyPermanentlyInvalidatedException) {
-                    callBack.onErrorAuthenticate(
-                        FeatureBiometricException(
-                            code = "KEY_PERMANENTLY_INVALID_EXCEPTION",
-                            message = "The provided key is permanently invalid. Please register a new key again.",
+            val executor = ContextCompat.getMainExecutor(activity)
+            val cipher = getCipher()
+            val secretKey = getSecretKey(alias) ?: throw FeatureBiometricException(
+                code = KotlinFeatureErrorAuthentication.SECRET_KEY_MISSING,
+                message = "Cannot authenticate secure decrypt because the secret key is missing"
+            )
+            try {
+                val ivKey = Base64.decode(encodedIvKey, Base64.NO_WRAP)
+                val ivSpec = IvParameterSpec(ivKey)
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+            } catch (e: Exception) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (e is KeyPermanentlyInvalidatedException) {
+                        throw FeatureBiometricException(
+                            code = KotlinFeatureErrorAuthentication.KEY_PERMANENTLY_INVALIDATED,
+                            message = "The provided key is permanently invalid. Please register a new key again."
                         )
+                    }
+                }
+                throw FeatureBiometricException(
+                    code = KotlinFeatureErrorAuthentication.GENERAL_04,
+                    message = e.message,
+                )
+            }
+
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
+                    val biometricPrompt = getBiometricPromptAndroidP(
+                        activity = activity,
+                        title = title,
+                        description = description,
+                        negativeText = negativeText,
+                        executor = executor,
+                        authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                        listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
                     )
-                    return
+
+                    biometricPrompt.authenticate(
+                        BiometricPrompt.CryptoObject(cipher),
+                        cancellationSignal,
+                        executor,
+                        object : BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                                super.onAuthenticationSucceeded(result)
+                                val currentCipher = result?.cryptoObject?.cipher
+                                if (currentCipher == null) {
+                                    callBack.onErrorAuthenticate(
+                                        exception = FeatureBiometricException(
+                                            code = KotlinFeatureErrorAuthentication.CIPHER_MISSING,
+                                            message = "Cannot decrypt because the cipher is missing"
+                                        )
+                                    )
+                                    return
+                                }
+                                callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                super.onAuthenticationFailed()
+                                callBack.onFailedAuthenticate()
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence?
+                            ) {
+                                super.onAuthenticationError(errorCode, errString)
+                                if (errorCode == 10) {
+                                    callBack.onCanceled()
+                                } else {
+                                    callBack.onErrorAuthenticate(
+                                        FeatureBiometricException(
+                                            code = "$errorCode",
+                                            message = errString?.toString()
+                                        )
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+
+                else -> {
+                    val promptInfo = getBiometricPrompt(
+                        title = title,
+                        description = description,
+                        authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                        negativeText = negativeText
+                    )
+
+                    val biometricPrompt = getAndroidXBiometricPrompt(
+                        fragmentActivity = activity as FragmentActivity,
+                        executor = executor,
+                        callBack = object :
+                            androidx.biometric.BiometricPrompt.AuthenticationCallback() {
+                            override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
+                                super.onAuthenticationSucceeded(result)
+                                callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
+                            }
+
+                            override fun onAuthenticationFailed() {
+                                super.onAuthenticationFailed()
+                                callBack.onFailedAuthenticate()
+                            }
+
+                            override fun onAuthenticationError(
+                                errorCode: Int,
+                                errString: CharSequence
+                            ) {
+                                super.onAuthenticationError(errorCode, errString)
+                                if (errorCode == 10) {
+                                    callBack.onCanceled()
+                                } else {
+                                    callBack.onErrorAuthenticate(
+                                        FeatureBiometricException(
+                                            code = "$errorCode",
+                                            message = errString.toString()
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    )
+                    biometricPrompt.authenticate(
+                        promptInfo,
+                        androidx.biometric.BiometricPrompt.CryptoObject(cipher)
+                    )
                 }
             }
+        } catch (e: FeatureBiometricException) {
+            callBack.onErrorAuthenticate(e)
+        } catch (e: Exception) {
             callBack.onErrorAuthenticate(
                 FeatureBiometricException(
-                    code = "INIT_CIPHER",
-                    message = "The provided key is permanently invalid. Please register a new key again.",
+                    code = KotlinFeatureErrorAuthentication.GENERAL_05,
+                    message = e.message
                 )
             )
-            return
         }
 
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
-                val biometricPrompt = getBiometricPromptP(
-                    activity = activity,
-                    title = title,
-                    description = description,
-                    negativeText = negativeText,
-                    executor = executor,
-                    type = BiometricType.STRONG,
-                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
-                )
-
-                biometricPrompt.authenticate(
-                    BiometricPrompt.CryptoObject(cipher),
-                    cancellationSignal,
-                    executor,
-                    object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-                            super.onAuthenticationSucceeded(result)
-                            val currentCipher = result?.cryptoObject?.cipher
-                            if (currentCipher == null) {
-                                callBack.onErrorAuthenticate(
-                                    exception = FeatureBiometricException(
-                                        code = "CIPHER_MISSING_00",
-                                        message = "Cipher missing"
-                                    )
-                                )
-                                return
-                            }
-                            callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence?
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled()
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString?.toString()
-                                    )
-                                )
-                            }
-                        }
-                    },
-                )
-            }
-
-            else -> {
-                val promptInfo = getAndroidXPromptInfo(
-                    title = title,
-                    description = description,
-                    type = BiometricType.STRONG,
-                    negativeText = negativeText
-                )
-
-                val biometricPrompt = getAndroidXBiometricPrompt(
-                    fragmentActivity = activity as FragmentActivity,
-                    executor = executor,
-                    callBack = object :
-                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
-                            super.onAuthenticationSucceeded(result)
-                            callBack.onSuccessAuthenticateDecryptSecureBiometric(cipher = cipher)
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled()
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString.toString()
-                                    )
-                                )
-                            }
-                        }
-                    }
-                )
-                biometricPrompt.authenticate(
-                    promptInfo,
-                    androidx.biometric.BiometricPrompt.CryptoObject(cipher)
-                )
-            }
-        }
-    }
-
-    /**
-     * Initiates a biometric authentication process.
-     *
-     * This function sets up and prompts the user for biometric authentication (or device credentials, depending on the device’s support).
-     * If authentication succeeds, the provided cipher will be initialized for decryption.
-     *
-     * The function adapts the authentication mechanism based on the device's Android version:
-     *
-     * - **Android P (API 28) and above**: Uses the updated `BiometricPrompt` API for stronger biometric security.
-     * - **Android below P**: Uses the older `androidx.biometric.BiometricPrompt` API.
-     *
-     * On successful authentication, the `onSuccessAuthenticate` callback is triggered.
-     * If an error occurs or authentication fails, appropriate error and failure callbacks will be triggered.
-     *
-     * @param type The type of biometric, it could be BiometricType.WEAK
-     * @param title The title of the biometric prompt displayed to the user.
-     * @param description A description message for the biometric prompt, explaining the purpose of authentication.
-     * @param negativeText The text for the negative button (cancel button) in the biometric prompt.
-     * @param cancellationSignal A signal to cancel the authentication if needed, such as when the user cancels the operation.
-     * @param callBack The callback interface to handle success, failure, and error scenarios during the authentication process.
-     *
-     * The following events are handled through the callback:
-     * - **onSuccessAuthenticate()**: Called when authentication is successful.
-     * - **onFailedAuthenticate()**: Called when authentication fails (e.g., user did not pass biometric validation).
-     * - **onErrorAuthenticate(exception: FeatureBiometricException)**: Called when an error occurs, such as an issue with the cipher or the authentication process.
-     *
-     * Example usage for encryption:
-     *
-     * ```kotlin
-     * authenticate(
-     *     type = BiometricType.WEAK,
-     *     alias = "myKeyAlias",
-     *     title = "Secure Login",
-     *     description = "Authenticate to encrypt your data",
-     *     negativeText = "Cancel",
-     *     cancellationSignal = CancellationSignal(),
-     *     callBack = myBiometricCallback
-     * )
-     * ```
-     */
-    fun authenticate(
-        type: BiometricType,
-        cancellationSignal: CancellationSignal,
-        title: String,
-        description: String,
-        negativeText: String,
-        callBack: FeatureBiometricCallBack,
-    ) {
-        val executor = ContextCompat.getMainExecutor(activity)
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.P -> {
-                val biometricPrompt = getBiometricPromptP(
-                    activity = activity,
-                    title = title,
-                    description = description,
-                    negativeText = negativeText,
-                    executor = executor,
-                    type = type,
-                    listener = { dialog, which -> callBack.onDialogClick(dialog, which) },
-                )
-
-                biometricPrompt.authenticate(
-                    cancellationSignal,
-                    executor,
-                    object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
-                            super.onAuthenticationSucceeded(result)
-                            callBack.onSuccessAuthenticate()
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence?
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled();
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString?.toString()
-                                    )
-                                )
-                            }
-                        }
-                    },
-                )
-            }
-
-            else -> {
-                val promptInfo = getAndroidXPromptInfo(
-                    title = title,
-                    description = description,
-                    type = type,
-                    negativeText = negativeText
-                )
-
-                val biometricPrompt = getAndroidXBiometricPrompt(
-                    fragmentActivity = activity as FragmentActivity,
-                    executor = executor,
-                    callBack = object :
-                        androidx.biometric.BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: androidx.biometric.BiometricPrompt.AuthenticationResult) {
-                            super.onAuthenticationSucceeded(result)
-                            callBack.onSuccessAuthenticate()
-                        }
-
-                        override fun onAuthenticationFailed() {
-                            super.onAuthenticationFailed()
-                            callBack.onFailedAuthenticate()
-                        }
-
-                        override fun onAuthenticationError(
-                            errorCode: Int,
-                            errString: CharSequence
-                        ) {
-                            super.onAuthenticationError(errorCode, errString)
-                            if (errorCode == 10) {
-                                callBack.onCanceled();
-                            } else {
-                                callBack.onErrorAuthenticate(
-                                    FeatureBiometricException(
-                                        code = "$errorCode",
-                                        message = errString.toString()
-                                    )
-                                )
-                            }
-                        }
-                    }
-                )
-                biometricPrompt.authenticate(promptInfo)
-            }
-        }
     }
 
     /**
@@ -866,7 +951,7 @@ class KotlinFeatureBiometric(private val activity: Activity) {
             return String(cipher.doFinal(encryptedText))
         } catch (e: BadPaddingException) {
             throw FeatureBiometricException(
-                code = "BAD_PADDING_EXCEPTION",
+                code = KotlinFeatureErrorAuthentication.BAD_PADDING,
                 message = e.message,
             )
         }
