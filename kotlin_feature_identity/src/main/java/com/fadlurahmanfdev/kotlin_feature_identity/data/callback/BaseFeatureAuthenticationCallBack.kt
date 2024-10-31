@@ -16,6 +16,10 @@ interface AuthenticationCallBack : BaseFeatureAuthenticationCallBack {
     fun onSuccessAuthenticate()
 }
 
-interface SecureAuthenticationCallBack : BaseFeatureAuthenticationCallBack {
+interface SecureAuthenticationEncryptCallBack : BaseFeatureAuthenticationCallBack {
     fun onSuccessAuthenticate(cipher: Cipher, ivKeyEncoded: String)
+}
+
+interface SecureAuthenticationDecryptCallBack : BaseFeatureAuthenticationCallBack {
+    fun onSuccessAuthenticate(cipher: Cipher)
 }

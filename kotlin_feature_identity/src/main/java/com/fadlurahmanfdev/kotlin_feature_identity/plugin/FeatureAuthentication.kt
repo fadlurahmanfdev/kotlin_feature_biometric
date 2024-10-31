@@ -14,20 +14,21 @@ import android.util.Base64
 import android.hardware.biometrics.BiometricManager
 import android.hardware.biometrics.BiometricPrompt
 import android.hardware.biometrics.BiometricPrompt.CryptoObject
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
-import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
+import javax.crypto.spec.IvParameterSpec
 
 class FeatureAuthentication(private val context: Context) : FeatureAuthenticationRepository {
 
@@ -287,7 +288,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         subTitle: String?,
         description: String,
         negativeText: String,
-        callBack: SecureAuthenticationCallBack
+        callBack: SecureAuthenticationEncryptCallBack
     ) {
         try {
             val cipher = getCipher()
@@ -408,6 +409,150 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             }
         } catch (e: FeatureIdentityException) {
             callBack.onErrorAuthenticate(e)
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            callBack.onErrorAuthenticate(
+                FeatureIdentityException(
+                    code = ErrorConstant.KEY_PERMANENTLY_INVALIDATED,
+                    message = e.message,
+                )
+            )
+        } catch (e: Exception) {
+            callBack.onErrorAuthenticate(
+                FeatureIdentityException(
+                    code = ErrorConstant.UNABLE_ENCRYPT_AUTHENTICATE,
+                    message = e.message,
+                )
+            )
+        }
+    }
+
+    override fun secureAuthenticateBiometricDecrypt(
+        alias: String,
+        encodedIVKey: String,
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText: String,
+        callBack: SecureAuthenticationDecryptCallBack
+    ) {
+        try {
+            val cipher = getCipher()
+            val secretKey = getSecretKey(alias = alias)
+                ?: throw FeatureIdentityException(
+                    code = ErrorConstant.SECRET_KEY_MISSING,
+                    message = "Cannot proceed to the next page caused by secret key null"
+                )
+
+            val ivKey = Base64.decode(encodedIVKey, Base64.NO_WRAP)
+            val ivSpec = IvParameterSpec(ivKey)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                generalAuthenticateBiometricAndroidP(
+                    title = title,
+                    subTitle = subTitle,
+                    description = description,
+                    authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                    negativeText = negativeText,
+                    negativeButtonCallback = object : DialogInterface.OnClickListener {
+                        override fun onClick(dialog: DialogInterface?, which: Int) {
+                            callBack.onNegativeButtonClicked(which)
+                        }
+                    },
+                    cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                    callback = object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            if (result?.cryptoObject?.cipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    FeatureIdentityException(
+                                        code = ErrorConstant.CIPHER_MISSING,
+                                        message = "Cipher missing for secure authentication"
+                                    )
+                                )
+                                return
+                            }
+
+                            val cipherResult = result.cryptoObject.cipher
+                            callBack.onSuccessAuthenticate(cipherResult)
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureIdentityException(
+                                    code = "$errorCode",
+                                    message = errString?.toString()
+                                )
+                            )
+                        }
+                    }
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                generalAuthenticateAndroidM(
+                    FingerprintManager.CryptoObject(cipher),
+                    object : FingerprintManager.AuthenticationCallback() {
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationSucceeded(result: FingerprintManager.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            if (result?.cryptoObject?.cipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    FeatureIdentityException(
+                                        code = ErrorConstant.CIPHER_MISSING,
+                                        message = "Cipher missing for secure authentication"
+                                    )
+                                )
+                                return
+                            }
+
+                            val cipherResult = result.cryptoObject.cipher
+                            callBack.onSuccessAuthenticate(cipherResult)
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureIdentityException(
+                                    code = "$errorCode",
+                                    message = errString?.toString(),
+                                )
+                            )
+                        }
+                    }
+                )
+            } else {
+                throw FeatureIdentityException(
+                    code = ErrorConstant.OS_NOT_SUPPORTED,
+                    message = "OS not supported"
+                )
+            }
+        } catch (e: FeatureIdentityException) {
+            callBack.onErrorAuthenticate(e)
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            callBack.onErrorAuthenticate(
+                FeatureIdentityException(
+                    code = ErrorConstant.KEY_PERMANENTLY_INVALIDATED,
+                    message = e.message,
+                )
+            )
         } catch (e: Exception) {
             callBack.onErrorAuthenticate(
                 FeatureIdentityException(
@@ -465,7 +610,6 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
     }
 
     private fun generalAuthenticateAndroidM(
-//        secureAuthenticate: Boolean = false,
         cryptoObject: FingerprintManager.CryptoObject?,
         callback: FingerprintManager.AuthenticationCallback,
     ) {

@@ -1,7 +1,8 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 
@@ -27,6 +28,16 @@ interface FeatureAuthenticationRepository {
         subTitle: String?,
         description: String,
         negativeText:String,
-        callBack: SecureAuthenticationCallBack
+        callBack: SecureAuthenticationEncryptCallBack
+    )
+
+    fun secureAuthenticateBiometricDecrypt(
+        alias: String,
+        encodedIVKey:String,
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText:String,
+        callBack: SecureAuthenticationDecryptCallBack
     )
 }
