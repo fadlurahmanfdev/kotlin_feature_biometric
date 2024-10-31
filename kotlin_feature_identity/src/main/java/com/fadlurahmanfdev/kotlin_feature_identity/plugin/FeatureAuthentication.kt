@@ -20,14 +20,12 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
-import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CheckAuthenticationStatusType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import java.security.KeyStore
 import javax.crypto.BadPaddingException
@@ -804,14 +802,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
      * @param encryptedText The encrypted byte array to be decrypted.
      * @return The decrypted plain text string.
-     * @throws FeatureBiometricException If the decryption fails due to padding issues (BadPaddingException).
+     * @throws FeatureIdentityException If the decryption fails due to padding issues (BadPaddingException).
      */
     override fun decrypt(cipher: Cipher, encryptedText: ByteArray): String {
         try {
             return String(cipher.doFinal(encryptedText))
         } catch (e: BadPaddingException) {
-            throw FeatureBiometricException(
-                code = KotlinFeatureErrorAuthentication.BAD_PADDING,
+            throw FeatureIdentityException(
+                code = ErrorConstant.BAD_PADDING,
                 message = e.message,
             )
         }
@@ -827,7 +825,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
      * @param encryptedText The Base64-encoded encrypted string to be decrypted.
      * @return The decrypted plain text string.
-     * @throws FeatureBiometricException If the decryption fails due to padding issues.
+     * @throws FeatureIdentityException If the decryption fails due to padding issues.
      */
     override fun decrypt(cipher: Cipher, encryptedText: String): String {
         val decodedText =

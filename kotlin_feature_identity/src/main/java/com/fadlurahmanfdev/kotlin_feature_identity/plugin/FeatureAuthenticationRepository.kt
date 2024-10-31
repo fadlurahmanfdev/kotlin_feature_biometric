@@ -1,16 +1,13 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.os.Build
-import android.util.Base64
 import androidx.annotation.RequiresApi
-import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
-import javax.crypto.BadPaddingException
+import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import javax.crypto.Cipher
 
 interface FeatureAuthenticationRepository {
@@ -193,7 +190,7 @@ interface FeatureAuthenticationRepository {
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
      * @param encryptedText The encrypted byte array to be decrypted.
      * @return The decrypted plain text string.
-     * @throws FeatureBiometricException If the decryption fails due to padding issues (BadPaddingException).
+     * @throws FeatureIdentityException If the decryption fails due to padding issues (BadPaddingException).
      */
     fun decrypt(cipher: Cipher, encryptedText: ByteArray): String
 
@@ -207,7 +204,7 @@ interface FeatureAuthenticationRepository {
      * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
      * @param encryptedText The Base64-encoded encrypted string to be decrypted.
      * @return The decrypted plain text string.
-     * @throws FeatureBiometricException If the decryption fails due to padding issues.
+     * @throws FeatureIdentityException If the decryption fails due to padding issues.
      */
     fun decrypt(cipher: Cipher, encryptedText: String): String
 }

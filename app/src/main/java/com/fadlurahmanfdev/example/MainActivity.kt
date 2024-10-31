@@ -1,15 +1,11 @@
 package com.fadlurahmanfdev.example
 
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
-import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -17,22 +13,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.fadlurahmanfdev.example.data.FeatureModel
 import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthenticationRepository
-import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
 import javax.crypto.Cipher
 
 class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
-    @Deprecated(message = "Replace with FeatureAuthentication")
-    lateinit var featureBiometric: KotlinFeatureBiometric
     lateinit var featureAuthentication: FeatureAuthenticationRepository
 
     private val features: List<FeatureModel> = listOf<FeatureModel>(
@@ -138,8 +127,6 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         adapter.setList(features)
         adapter.setHasStableIds(true)
         rv.adapter = adapter
-
-        featureBiometric = KotlinFeatureBiometric(this)
         featureAuthentication = FeatureAuthentication(this)
     }
 
@@ -213,7 +200,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
             "CAN_AUTHENTICATE_USING_DEVICE_CREDENTIAL" -> {
                 val canAuthenticate =
-                    featureBiometric.canAuthenticate(FeatureAuthenticatorType.DEVICE_CREDENTIAL)
+                    featureAuthentication.canAuthenticate(FeatureAuthenticatorType.DEVICE_CREDENTIAL)
                 Log.d(
                     this::class.java.simpleName,
                     "can authenticate using device credential: $canAuthenticate"
