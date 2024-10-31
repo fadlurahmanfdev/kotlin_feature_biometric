@@ -5,9 +5,9 @@ import javax.crypto.Cipher
 
 interface BaseFeatureAuthenticationCallBack {
     fun onNegativeButtonClicked(which: Int) {}
-    fun onFailedAuthenticate() {}
+    fun onFailedAuthenticate()
 
-    fun onErrorAuthenticate(exception: FeatureIdentityException) {}
+    fun onErrorAuthenticate(exception: FeatureIdentityException)
 
     fun onCanceled() {}
 }

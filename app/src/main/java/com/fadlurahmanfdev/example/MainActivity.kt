@@ -97,6 +97,12 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Delete Secret Key",
+            desc = "Delete secret key",
+            enum = "DELETE_SECRET_KEY"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Encrypted Biometric",
             desc = "Prompt encrypted biometric",
             enum = "PROMPT_ENCRYPT_BIOMETRIC"
@@ -231,6 +237,24 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             )
                             toast.show()
                         }
+
+                        override fun onErrorAuthenticate(exception: FeatureIdentityException) {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Error Authentication: ${exception.code}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onFailedAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Failed authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
                     }
                 )
             }
@@ -252,41 +276,36 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                                 )
                                 toast.show()
                             }
+
+                            override fun onErrorAuthenticate(exception: FeatureIdentityException) {
+                                val toast = Toast.makeText(
+                                    this@MainActivity,
+                                    "Error Authentication: ${exception.code}",
+                                    Toast.LENGTH_SHORT
+                                )
+                                toast.show()
+                            }
+
+                            override fun onFailedAuthenticate() {
+                                val toast = Toast.makeText(
+                                    this@MainActivity,
+                                    "Failed authenticate",
+                                    Toast.LENGTH_SHORT
+                                )
+                                toast.show()
+                            }
                         }
                     )
                 }
-//                featureBiometric.authenticate(
-//                    title = "Encrypt Biometric",
-//                    description = "Authenticate using your credential",
-//                    negativeText = "Cancel",
-//                    type = FeatureAuthenticatorType.DEVICE_CREDENTIAL,
-//                    cancellationSignal = cancellationSignal,
-//                    callBack = object : FeatureBiometricCallBack {
-//                        override fun onSuccessAuthenticate() {
-//                            val toast = Toast.makeText(
-//                                this@MainActivity,
-//                                "Successfully Authenticate ${FeatureAuthenticatorType.DEVICE_CREDENTIAL}",
-//                                Toast.LENGTH_SHORT
-//                            )
-//                            toast.show()
-//                        }
-//                    }
-//                )
             }
 
-//            "GENERATE_SECRET_KEY" -> {
-//                featureBiometric.generateSecretKey("fadlurahmanfdev")
-//                val toast = Toast.makeText(
-//                    this@MainActivity,
-//                    "Successfully generate secret key",
-//                    Toast.LENGTH_SHORT
-//                )
-//                toast.show()
-//            }
-
             "IS_BIOMETRIC_CHANGED" -> {
-                val isBiometricChanged = featureBiometric.isBiometricChanged("fadlurahmanfdev")
+                val isBiometricChanged = featureAuthentication.isBiometricChanged("fadlurahmanfdev")
                 Log.d(this::class.java.simpleName, "is biometric changed: $isBiometricChanged")
+            }
+
+            "DELETE_SECRET_KEY" -> {
+                featureAuthentication.deleteSecretKey("fadlurahmanfdev")
             }
 
             "PROMPT_ENCRYPT_BIOMETRIC" -> {
@@ -315,6 +334,24 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Successfully Encrypted Authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onErrorAuthenticate(exception: FeatureIdentityException) {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Error Authentication: ${exception.code}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onFailedAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Failed authenticate",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
@@ -362,10 +399,18 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                         }
 
                         override fun onErrorAuthenticate(exception: FeatureIdentityException) {
-                            super.onErrorAuthenticate(exception)
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Error Authentication: ${exception.code}",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onFailedAuthenticate() {
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Failed authenticate",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()

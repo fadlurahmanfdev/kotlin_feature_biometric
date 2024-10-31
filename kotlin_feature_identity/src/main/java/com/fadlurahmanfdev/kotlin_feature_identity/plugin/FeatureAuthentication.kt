@@ -137,6 +137,10 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         keyStore.load(null)
         try {
             keyStore.deleteEntry(alias)
+            Log.d(
+                this::class.java.simpleName,
+                "successfully delete secret key $alias"
+            )
         } catch (e: Exception) {
             Log.e(
                 this::class.java.simpleName,
@@ -395,7 +399,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         try {
             val cipher = getCipher()
             val secretKey = getSecretKey(alias = alias)
-            cipher.init(Cipher.DECRYPT_MODE, secretKey)
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             return false
         } catch (e: FeatureIdentityException) {
             throw e
