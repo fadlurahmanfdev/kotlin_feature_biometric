@@ -1,5 +1,6 @@
 package com.fadlurahmanfdev.example
 
+import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.util.Base64
@@ -17,18 +18,52 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometri
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
+import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthentication
+import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthenticationRepository
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
 import javax.crypto.Cipher
 
 class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
+    @Deprecated(message = "Replace with FeatureAuthentication")
     lateinit var featureBiometric: KotlinFeatureBiometric
+    lateinit var featureAuthentication: FeatureAuthenticationRepository
 
     private val features: List<FeatureModel> = listOf<FeatureModel>(
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Is Device Support Fingerprint?",
+            desc = "Check whether device support fingerprint",
+            enum = "DEVICE_SUPPORT_FINGERPRINT"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Is Device Support Face Authentication?",
+            desc = "Check whether device support face authentication",
+            enum = "DEVICE_SUPPORT_FACE_AUTHENTICATION"
+        ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Is Device Support Biometric?",
             desc = "Check whether device support biometric",
             enum = "DEVICE_SUPPORT_BIOMETRIC"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Is Fingerprint Enrolled?",
+            desc = "Check whether fingerprint enrolled",
+            enum = "IS_FINGERPRINT_ENROLLED"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "---------------------------",
+            desc = "---------------------------",
+            enum = "-"
+        ),
+        FeatureModel(
+            featureIcon = R.drawable.baseline_developer_mode_24,
+            title = "Check Biometric Authentication Status",
+            desc = "Check status biometric authentication",
+            enum = "CHECK_BIOMETRIC_AUTHENTICATION_STATUS"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
@@ -117,6 +152,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         rv.adapter = adapter
 
         featureBiometric = KotlinFeatureBiometric(this)
+        featureAuthentication = FeatureAuthentication(this)
     }
 
     private lateinit var cancellationSignal: CancellationSignal
@@ -126,17 +162,52 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 
     override fun onClicked(item: FeatureModel) {
         when (item.enum) {
-            "DEVICE_SUPPORT_BIOMETRIC" -> {
-                val isDeviceSupportBiometric = featureBiometric.isDeviceSupportBiometric()
+            "DEVICE_SUPPORT_FINGERPRINT" -> {
+                val isSupported = featureAuthentication.isDeviceSupportFingerprint()
                 Log.d(
                     this::class.java.simpleName,
-                    "is device support biometric: $isDeviceSupportBiometric"
+                    "is device support fingerprint: $isSupported"
+                )
+            }
+
+            "DEVICE_SUPPORT_FACE_AUTHENTICATION" -> {
+                val isSupported = featureAuthentication.isDeviceSupportFaceAuth()
+                Log.d(
+                    this::class.java.simpleName,
+                    "is device support face auth: $isSupported"
+                )
+            }
+
+            "DEVICE_SUPPORT_BIOMETRIC" -> {
+                val isSupported = featureAuthentication.isDeviceSupportBiometric()
+                Log.d(
+                    this::class.java.simpleName,
+                    "is device support biometric: $isSupported"
+                )
+            }
+
+            "IS_FINGERPRINT_ENROLLED" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val isEnrolled = featureAuthentication.isFingerprintEnrolled()
+                    Log.d(
+                        this::class.java.simpleName,
+                        "is fingerprint enrolled: $isEnrolled"
+                    )
+                }
+            }
+
+            "CHECK_BIOMETRIC_AUTHENTICATION_STATUS" -> {
+                val status =
+                    featureAuthentication.checkAuthenticatorStatus(FeatureAuthenticatorType.BIOMETRIC)
+                Log.d(
+                    this::class.java.simpleName,
+                    "biometric authentication: $status"
                 )
             }
 
             "CAN_AUTHENTICATE_USING_BIOMETRIC" -> {
                 val canAuthenticate =
-                    featureBiometric.canAuthenticate(FeatureAuthenticatorType.BIOMETRIC)
+                    featureAuthentication.canAuthenticate(FeatureAuthenticatorType.BIOMETRIC)
                 Log.d(
                     this::class.java.simpleName,
                     "can authenticate using biometric: $canAuthenticate"

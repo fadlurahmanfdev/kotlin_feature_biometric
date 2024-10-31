@@ -13,7 +13,9 @@ interface FeatureAuthenticationRepository {
     fun isDeviceSupportFingerprint(): Boolean
     fun isDeviceSupportFaceAuth(): Boolean
     fun isDeviceSupportBiometric(): Boolean
+    @RequiresApi(Build.VERSION_CODES.M)
     fun isFingerprintEnrolled(): Boolean
+    @RequiresApi(Build.VERSION_CODES.M)
     fun isDeviceCredentialEnrolled(): Boolean
     fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus
     fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean
