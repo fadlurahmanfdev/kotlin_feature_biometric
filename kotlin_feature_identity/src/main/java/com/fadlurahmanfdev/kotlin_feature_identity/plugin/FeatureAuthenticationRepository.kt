@@ -9,8 +9,24 @@ interface FeatureAuthenticationRepository {
     fun isDeviceSupportFingerprint(): Boolean
     fun isDeviceSupportFaceAuth(): Boolean
     fun isDeviceSupportBiometric(): Boolean
+    fun isFingerprintEnrolled(): Boolean
+    fun isDeviceCredentialEnrolled(): Boolean
     fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus
     fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean
-    fun authenticate(callBack: AuthenticationCallBack)
-    fun secureAuthenticate(callBack: SecureAuthenticationCallBack)
+    fun authenticateBiometric(
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText:String,
+        callBack: AuthenticationCallBack
+    )
+
+    fun secureAuthenticateBiometricEncrypt(
+        alias: String,
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText:String,
+        callBack: SecureAuthenticationCallBack
+    )
 }

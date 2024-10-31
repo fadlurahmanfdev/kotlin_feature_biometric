@@ -1,6 +1,8 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
+import android.app.KeyguardManager
 import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
@@ -10,18 +12,28 @@ import android.os.Looper
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
+import android.hardware.biometrics.BiometricPrompt.CryptoObject
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
+import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
+import java.security.KeyStore
 import javax.crypto.Cipher
+import javax.crypto.SecretKey
 
 class FeatureAuthentication(private val context: Context) : FeatureAuthenticationRepository {
 
     private lateinit var fingerprintManager: FingerprintManager
     private lateinit var biometricManager: BiometricManager
+    private lateinit var keyguardManager: KeyguardManager
 
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -33,6 +45,8 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             biometricManager =
                 context.getSystemService(Context.BIOMETRIC_SERVICE) as BiometricManager
         }
+
+        keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
     }
 
     private fun getCipher(): Cipher {
@@ -45,6 +59,34 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         } else {
             Cipher.getInstance("AES/CBC/PKCS7Padding")
         }
+    }
+
+    private fun getSecretKey(alias: String): SecretKey? {
+        var secretKey: SecretKey? = null
+        val keyStore = KeyStore.getInstance("AndroidKeyStore")
+        keyStore.load(null)
+        try {
+            val existingSecretKey =
+                keyStore.getKey(alias, null) as SecretKey?
+            if (existingSecretKey != null) {
+                Log.d(
+                    this::class.java.simpleName,
+                    "successfully get existing key - $alias"
+                )
+                secretKey = existingSecretKey
+            }
+        } catch (e: Exception) {
+            Log.d(
+                this::class.java.simpleName,
+                "unable to fetch $alias: ${e.message}"
+            )
+            throw FeatureIdentityException(
+                code = ErrorConstant.UNABLE_FETCH_GET_SECRET_KEY,
+                message = e.message
+            )
+        }
+
+        return secretKey
     }
 
     override fun isDeviceSupportFingerprint(): Boolean {
@@ -62,13 +104,25 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) || context.packageManager.hasSystemFeature(
                 "com.samsung.android.bio.face"
             )
+        } else {
+            return context.packageManager.hasSystemFeature(
+                "com.samsung.android.bio.face"
+            )
         }
-
-        return false
     }
 
     override fun isDeviceSupportBiometric(): Boolean {
         return (isDeviceSupportFingerprint() || isDeviceSupportFaceAuth())
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    override fun isFingerprintEnrolled(): Boolean {
+        return fingerprintManager.hasEnrolledFingerprints()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    override fun isDeviceCredentialEnrolled(): Boolean {
+        return keyguardManager.isDeviceSecure
     }
 
     override fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus {
@@ -108,11 +162,31 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     FeatureAuthenticationStatus.UNKNOWN
                 }
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!isDeviceSupportFingerprint()) {
-                return FeatureAuthenticationStatus.NO_HARDWARE
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val canAuthenticate: Boolean = when (authenticatorType) {
+                FeatureAuthenticatorType.BIOMETRIC -> {
+                    biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS
+                }
+
+                FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
+                    isDeviceCredentialEnrolled()
+                }
             }
-            return when (fingerprintManager.hasEnrolledFingerprints()) {
+            return when (canAuthenticate) {
+                true -> FeatureAuthenticationStatus.SUCCESS
+                false -> FeatureAuthenticationStatus.NONE_ENROLLED
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val canAuthenticate: Boolean = when (authenticatorType) {
+                FeatureAuthenticatorType.BIOMETRIC -> {
+                    isFingerprintEnrolled()
+                }
+
+                FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
+                    isDeviceCredentialEnrolled()
+                }
+            }
+            return when (canAuthenticate) {
                 true -> FeatureAuthenticationStatus.SUCCESS
                 false -> FeatureAuthenticationStatus.NONE_ENROLLED
             }
@@ -125,12 +199,55 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         return checkAuthenticatorStatus(authenticatorType) == FeatureAuthenticationStatus.SUCCESS
     }
 
-    override fun authenticate(
+    override fun authenticateBiometric(
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText: String,
         callBack: AuthenticationCallBack
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            authenticate(
-                false,
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            var authenticator = -1
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                authenticator = BiometricManager.Authenticators.BIOMETRIC_WEAK
+            }
+            generalAuthenticateBiometricAndroidP(
+                title = title,
+                subTitle = subTitle,
+                description = description,
+                authenticator = authenticator,
+                negativeText = negativeText,
+                negativeButtonCallback = object : DialogInterface.OnClickListener {
+                    override fun onClick(dialog: DialogInterface?, which: Int) {
+                        callBack.onNegativeButtonClicked(which)
+                    }
+                },
+                cryptoObject = null,
+                callback = object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                        super.onAuthenticationSucceeded(result)
+                        callBack.onSuccessAuthenticate()
+                    }
+
+                    override fun onAuthenticationFailed() {
+                        super.onAuthenticationFailed()
+                        callBack.onFailedAuthenticate()
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                        super.onAuthenticationError(errorCode, errString)
+                        callBack.onErrorAuthenticate(
+                            FeatureIdentityException(
+                                code = "$errorCode",
+                                message = errString?.toString()
+                            )
+                        )
+                    }
+                }
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            generalAuthenticateAndroidM(
+                null,
                 object : FingerprintManager.AuthenticationCallback() {
                     @Deprecated("Deprecated in Java")
                     override fun onAuthenticationSucceeded(result: FingerprintManager.AuthenticationResult?) {
@@ -156,77 +273,203 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     }
                 }
             )
-        }
-
-        throw FeatureIdentityException(
-            code = ErrorConstant.OS_NOT_SUPPORTED,
-            message = "OS not supported"
-        )
-    }
-
-    override fun secureAuthenticate(callBack: SecureAuthenticationCallBack) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            authenticate(
-                true,
-                object : FingerprintManager.AuthenticationCallback() {
-                    @Deprecated("Deprecated in Java")
-                    override fun onAuthenticationSucceeded(result: FingerprintManager.AuthenticationResult?) {
-                        super.onAuthenticationSucceeded(result)
-                        if (result?.cryptoObject?.cipher == null) {
-                            callBack.onErrorAuthenticate(
-                                FeatureIdentityException(
-                                    code = ErrorConstant.CIPHER_MISSING,
-                                    message = "Cipher missing for secure authentication"
-                                )
-                            )
-                            return
-                        }
-
-                        val cipher = result.cryptoObject.cipher
-                        val encodedIvKey =
-                            Base64.encodeToString(cipher.iv, Base64.NO_WRAP)
-                        callBack.onSuccessAuthenticate(
-                            cipher,
-                            encodedIvKey
-                        )
-                    }
-
-                    @Deprecated("Deprecated in Java")
-                    override fun onAuthenticationFailed() {
-                        super.onAuthenticationFailed()
-                        callBack.onFailedAuthenticate()
-                    }
-
-                    @Deprecated("Deprecated in Java")
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
-                        super.onAuthenticationError(errorCode, errString)
-                        callBack.onErrorAuthenticate(
-                            FeatureIdentityException(
-                                code = "$errorCode",
-                                message = errString?.toString(),
-                            )
-                        )
-                    }
-                }
+        } else {
+            throw FeatureIdentityException(
+                code = ErrorConstant.OS_NOT_SUPPORTED,
+                message = "OS not supported"
             )
         }
-
-        throw FeatureIdentityException(
-            code = ErrorConstant.OS_NOT_SUPPORTED,
-            message = "OS not supported"
-        )
     }
 
-    private fun authenticate(
-        secureAuthenticate: Boolean = false,
+    override fun secureAuthenticateBiometricEncrypt(
+        alias: String,
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText: String,
+        callBack: SecureAuthenticationCallBack
+    ) {
+        try {
+            val cipher = getCipher()
+            val secretKey = getSecretKey(alias = alias)
+                ?: throw FeatureIdentityException(
+                    code = ErrorConstant.SECRET_KEY_MISSING,
+                    message = "Cannot proceed to the next page caused by secret key null"
+                )
+
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                generalAuthenticateBiometricAndroidP(
+                    title = title,
+                    subTitle = subTitle,
+                    description = description,
+                    authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
+                    negativeText = negativeText,
+                    negativeButtonCallback = object : DialogInterface.OnClickListener {
+                        override fun onClick(dialog: DialogInterface?, which: Int) {
+                            callBack.onNegativeButtonClicked(which)
+                        }
+                    },
+                    cryptoObject = BiometricPrompt.CryptoObject(cipher),
+                    callback = object : BiometricPrompt.AuthenticationCallback() {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            if (result?.cryptoObject?.cipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    FeatureIdentityException(
+                                        code = ErrorConstant.CIPHER_MISSING,
+                                        message = "Cipher missing for secure authentication"
+                                    )
+                                )
+                                return
+                            }
+
+                            val cipherResult = result.cryptoObject.cipher
+                            val encodedIvKey =
+                                Base64.encodeToString(cipherResult.iv, Base64.NO_WRAP)
+                            callBack.onSuccessAuthenticate(
+                                cipherResult,
+                                encodedIvKey
+                            )
+                        }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureIdentityException(
+                                    code = "$errorCode",
+                                    message = errString?.toString()
+                                )
+                            )
+                        }
+                    }
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                generalAuthenticateAndroidM(
+                    FingerprintManager.CryptoObject(cipher),
+                    object : FingerprintManager.AuthenticationCallback() {
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationSucceeded(result: FingerprintManager.AuthenticationResult?) {
+                            super.onAuthenticationSucceeded(result)
+                            if (result?.cryptoObject?.cipher == null) {
+                                callBack.onErrorAuthenticate(
+                                    FeatureIdentityException(
+                                        code = ErrorConstant.CIPHER_MISSING,
+                                        message = "Cipher missing for secure authentication"
+                                    )
+                                )
+                                return
+                            }
+
+                            val cipherResult = result.cryptoObject.cipher
+                            val encodedIvKey =
+                                Base64.encodeToString(cipherResult.iv, Base64.NO_WRAP)
+                            callBack.onSuccessAuthenticate(
+                                cipherResult,
+                                encodedIvKey
+                            )
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            callBack.onFailedAuthenticate()
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onAuthenticationError(
+                            errorCode: Int,
+                            errString: CharSequence?
+                        ) {
+                            super.onAuthenticationError(errorCode, errString)
+                            callBack.onErrorAuthenticate(
+                                FeatureIdentityException(
+                                    code = "$errorCode",
+                                    message = errString?.toString(),
+                                )
+                            )
+                        }
+                    }
+                )
+            } else {
+                throw FeatureIdentityException(
+                    code = ErrorConstant.OS_NOT_SUPPORTED,
+                    message = "OS not supported"
+                )
+            }
+        } catch (e: FeatureIdentityException) {
+            callBack.onErrorAuthenticate(e)
+        } catch (e: Exception) {
+            callBack.onErrorAuthenticate(
+                FeatureIdentityException(
+                    code = ErrorConstant.UNABLE_ENCRYPT_AUTHENTICATE,
+                    message = e.message,
+                )
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun generalAuthenticateBiometricAndroidP(
+        callback: BiometricPrompt.AuthenticationCallback,
+        negativeButtonCallback: DialogInterface.OnClickListener,
+        cryptoObject: CryptoObject?,
+        authenticator: Int,
+        title: String,
+        subTitle: String? = null,
+        description: String,
+        negativeText: String,
+    ) {
+
+        val cancellationSignal = CancellationSignal()
+        val executor = ContextCompat.getMainExecutor(context)
+        val biometricPrompt = BiometricPrompt.Builder(context)
+            .setTitle(title)
+            .apply {
+                if (!subTitle.isNullOrEmpty()) {
+                    setSubtitle(subTitle)
+                }
+            }
+            .setDescription(description)
+            .apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    setAllowedAuthenticators(authenticator)
+                }
+            }
+            .setNegativeButton(negativeText, executor, negativeButtonCallback)
+            .build()
+
+        if (cryptoObject != null) {
+            biometricPrompt.authenticate(
+                cryptoObject,
+                cancellationSignal,
+                executor,
+                callback
+            )
+        } else {
+            biometricPrompt.authenticate(
+                cancellationSignal,
+                executor,
+                callback
+            )
+        }
+    }
+
+    private fun generalAuthenticateAndroidM(
+//        secureAuthenticate: Boolean = false,
+        cryptoObject: FingerprintManager.CryptoObject?,
         callback: FingerprintManager.AuthenticationCallback,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            var cryptoObject: FingerprintManager.CryptoObject? = null
-            if (secureAuthenticate) {
-                cryptoObject = FingerprintManager.CryptoObject(getCipher())
-            }
-
             val cancellationSignal = CancellationSignal()
             val handler = Handler(Looper.getMainLooper())
             fingerprintManager.authenticate(
