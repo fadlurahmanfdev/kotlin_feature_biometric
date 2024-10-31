@@ -3,6 +3,7 @@ package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
@@ -198,6 +199,54 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
 
     override fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean {
         return checkAuthenticatorStatus(authenticatorType) == FeatureAuthenticationStatus.SUCCESS
+    }
+
+    override fun getIntentAuthenticateDeviceCredential(title: String, description: String): Intent {
+        return keyguardManager.createConfirmDeviceCredentialIntent(title, description)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    override fun authenticateDeviceCredential(
+        title: String,
+        subTitle: String?,
+        description: String,
+        negativeText: String,
+        callBack: AuthenticationCallBack
+    ) {
+        generalAuthenticateBiometricAndroidP(
+            title = title,
+            subTitle = subTitle,
+            description = description,
+            authenticator = BiometricManager.Authenticators.DEVICE_CREDENTIAL,
+            negativeText = negativeText,
+            negativeButtonCallback = object : DialogInterface.OnClickListener {
+                override fun onClick(dialog: DialogInterface?, which: Int) {
+                    callBack.onNegativeButtonClicked(which)
+                }
+            },
+            cryptoObject = null,
+            callback = object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                    super.onAuthenticationSucceeded(result)
+                    callBack.onSuccessAuthenticate()
+                }
+
+                override fun onAuthenticationFailed() {
+                    super.onAuthenticationFailed()
+                    callBack.onFailedAuthenticate()
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                    super.onAuthenticationError(errorCode, errString)
+                    callBack.onErrorAuthenticate(
+                        FeatureIdentityException(
+                            code = "$errorCode",
+                            message = errString?.toString()
+                        )
+                    )
+                }
+            }
+        )
     }
 
     override fun authenticateBiometric(
