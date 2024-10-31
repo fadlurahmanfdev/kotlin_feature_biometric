@@ -29,6 +29,7 @@ interface FeatureAuthenticationRepository {
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: AuthenticationCallBack,
     )
 
@@ -37,6 +38,7 @@ interface FeatureAuthenticationRepository {
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: AuthenticationCallBack
     )
 
@@ -46,6 +48,7 @@ interface FeatureAuthenticationRepository {
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: SecureAuthenticationEncryptCallBack
     )
 
@@ -56,6 +59,7 @@ interface FeatureAuthenticationRepository {
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: SecureAuthenticationDecryptCallBack
     )
 }

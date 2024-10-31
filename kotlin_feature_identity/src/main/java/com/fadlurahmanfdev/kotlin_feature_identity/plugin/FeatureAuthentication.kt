@@ -211,6 +211,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: AuthenticationCallBack
     ) {
         generalAuthenticateBiometricAndroidP(
@@ -254,6 +255,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: AuthenticationCallBack
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -266,6 +268,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                 subTitle = subTitle,
                 description = description,
                 authenticator = authenticator,
+                setDeviceCredentialAllowed = true,
                 negativeText = negativeText,
                 negativeButtonCallback = object : DialogInterface.OnClickListener {
                     override fun onClick(dialog: DialogInterface?, which: Int) {
@@ -337,6 +340,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: SecureAuthenticationEncryptCallBack
     ) {
         try {
@@ -354,6 +358,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     title = title,
                     subTitle = subTitle,
                     description = description,
+                    setDeviceCredentialAllowed = false,
                     authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                     negativeText = negativeText,
                     negativeButtonCallback = object : DialogInterface.OnClickListener {
@@ -482,6 +487,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         subTitle: String?,
         description: String,
         negativeText: String,
+        confirmationRequired: Boolean,
         callBack: SecureAuthenticationDecryptCallBack
     ) {
         try {
@@ -501,6 +507,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     title = title,
                     subTitle = subTitle,
                     description = description,
+                    setDeviceCredentialAllowed = false,
                     authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                     negativeText = negativeText,
                     negativeButtonCallback = object : DialogInterface.OnClickListener {
@@ -617,13 +624,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         callback: BiometricPrompt.AuthenticationCallback,
         negativeButtonCallback: DialogInterface.OnClickListener,
         cryptoObject: CryptoObject?,
+        setDeviceCredentialAllowed:Boolean = false,
+        setConfirmationRequired:Boolean = false,
         authenticator: Int,
         title: String,
         subTitle: String? = null,
         description: String,
         negativeText: String,
     ) {
-
         val cancellationSignal = CancellationSignal()
         val executor = ContextCompat.getMainExecutor(context)
         val biometricPrompt = BiometricPrompt.Builder(context)
@@ -637,6 +645,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             .apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     setAllowedAuthenticators(authenticator)
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setDeviceCredentialAllowed(setDeviceCredentialAllowed)
+                }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setConfirmationRequired(setConfirmationRequired)
                 }
             }
             .setNegativeButton(negativeText, executor, negativeButtonCallback)
@@ -658,26 +674,20 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun generalAuthenticateAndroidM(
         cryptoObject: FingerprintManager.CryptoObject?,
         callback: FingerprintManager.AuthenticationCallback,
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val cancellationSignal = CancellationSignal()
-            val handler = Handler(Looper.getMainLooper())
-            fingerprintManager.authenticate(
-                cryptoObject,
-                cancellationSignal,
-                0,
-                callback,
-                handler
+        val cancellationSignal = CancellationSignal()
+        val handler = Handler(Looper.getMainLooper())
+        fingerprintManager.authenticate(
+            cryptoObject,
+            cancellationSignal,
+            0,
+            callback,
+            handler
 
-            )
-        } else {
-            throw FeatureIdentityException(
-                code = ErrorConstant.OS_NOT_SUPPORTED,
-                message = "OS not supported"
-            )
-        }
+        )
     }
 }
