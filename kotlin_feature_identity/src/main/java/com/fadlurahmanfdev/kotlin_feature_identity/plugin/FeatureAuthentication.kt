@@ -3,32 +3,36 @@ package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.DialogInterface
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
+import android.hardware.biometrics.BiometricPrompt.CryptoObject
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
-import android.hardware.biometrics.BiometricPrompt.CryptoObject
-import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
+import com.fadlurahmanfdev.kotlin_feature_identity.constant.KotlinFeatureErrorAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CheckAuthenticationStatusType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import java.security.KeyStore
+import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
@@ -64,6 +68,43 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun generateKeyGenParameterSpec(alias: String): KeyGenParameterSpec {
+        return KeyGenParameterSpec.Builder(
+            alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        ).apply {
+            setBlockModes(KeyProperties.BLOCK_MODE_CBC)
+            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+            setUserAuthenticationRequired(true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                setInvalidatedByBiometricEnrollment(true)
+            }
+        }.build()
+    }
+
+    private fun generateSecretKey(alias: String): SecretKey {
+        var secretKey: SecretKey? = getSecretKey(alias)
+
+        if (secretKey != null) {
+            Log.d(this::class.java.simpleName, "secret key $alias already exist")
+            return secretKey
+        }
+
+        Log.d(this::class.java.simpleName, "generating new secret key $alias")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val keyGenerator =
+                KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+            keyGenerator.init(generateKeyGenParameterSpec(alias))
+            secretKey = keyGenerator.generateKey()
+        } else {
+            val keyGenerator = KeyGenerator.getInstance("AES")
+            keyGenerator.init(256)
+            secretKey = keyGenerator.generateKey()
+        }
+
+        return secretKey
+    }
+
     private fun getSecretKey(alias: String): SecretKey? {
         var secretKey: SecretKey? = null
         val keyStore = KeyStore.getInstance("AndroidKeyStore")
@@ -88,8 +129,24 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                 message = e.message
             )
         }
-
         return secretKey
+    }
+
+    override fun deleteSecretKey(alias: String) {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore")
+        keyStore.load(null)
+        try {
+            keyStore.deleteEntry(alias)
+        } catch (e: Exception) {
+            Log.e(
+                this::class.java.simpleName,
+                "failed to delete secret key $alias"
+            )
+            throw FeatureIdentityException(
+                code = ErrorConstant.UNABLE_TO_DELETE_SECRET_KEY,
+                message = e.message
+            )
+        }
     }
 
     override fun isDeviceSupportFingerprint(): Boolean {
@@ -334,6 +391,27 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    override fun isBiometricChanged(alias: String): Boolean {
+        try {
+            val cipher = getCipher()
+            val secretKey = getSecretKey(alias = alias)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey)
+            return false
+        } catch (e: FeatureIdentityException) {
+            throw e
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (e is KeyPermanentlyInvalidatedException) {
+                    return true
+                }
+            }
+            throw FeatureIdentityException(
+                code = ErrorConstant.UNABLE_TO_DETECT_BIOMETRIC_CHANGE,
+                message = e.message,
+            )
+        }
+    }
+
     override fun secureAuthenticateBiometricEncrypt(
         alias: String,
         title: String,
@@ -345,11 +423,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
     ) {
         try {
             val cipher = getCipher()
-            val secretKey = getSecretKey(alias = alias)
-                ?: throw FeatureIdentityException(
-                    code = ErrorConstant.SECRET_KEY_MISSING,
-                    message = "Cannot proceed to the next page caused by secret key null"
-                )
+            var secretKey = getSecretKey(alias = alias)
+
+            if (secretKey == null) {
+                secretKey = generateSecretKey(alias)
+            }
 
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
 
@@ -694,5 +772,62 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             handler
 
         )
+    }
+
+    /**
+     * Encrypts a plain text string using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for encryption and the plain text to be encrypted.
+     * It encrypts the plain text and returns the result as a Base64-encoded string without any extra
+     * wrapping or padding.
+     *
+     * @param cipher The `Cipher` instance initialized in `ENCRYPT_MODE`.
+     * @param plainText The plain text string to be encrypted.
+     * @return The Base64-encoded encrypted string.
+     */
+    override fun encrypt(cipher: Cipher, plainText: String): String {
+        val byteEncryptedText = cipher.doFinal(plainText.toByteArray())
+        return Base64.encodeToString(byteEncryptedText, Base64.NO_WRAP)
+    }
+
+    /**
+     * Decrypts an encrypted byte array using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for decryption and the encrypted byte array.
+     * It decrypts the byte array and returns the original plain text string. If decryption fails
+     * due to incorrect padding, a `FeatureBiometricException` is thrown with the appropriate error message.
+     *
+     * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
+     * @param encryptedText The encrypted byte array to be decrypted.
+     * @return The decrypted plain text string.
+     * @throws FeatureBiometricException If the decryption fails due to padding issues (BadPaddingException).
+     */
+    override fun decrypt(cipher: Cipher, encryptedText: ByteArray): String {
+        try {
+            return String(cipher.doFinal(encryptedText))
+        } catch (e: BadPaddingException) {
+            throw FeatureBiometricException(
+                code = KotlinFeatureErrorAuthentication.BAD_PADDING,
+                message = e.message,
+            )
+        }
+    }
+
+    /**
+     * Decrypts an encrypted Base64-encoded string using the provided cipher.
+     *
+     * This function takes a `Cipher` initialized for decryption and a Base64-encoded encrypted string.
+     * It decodes the encrypted string from Base64 to a byte array, and then decrypts it using the
+     * `decrypt(cipher, encryptedPassword: ByteArray)` function.
+     *
+     * @param cipher The `Cipher` instance initialized in `DECRYPT_MODE`.
+     * @param encryptedText The Base64-encoded encrypted string to be decrypted.
+     * @return The decrypted plain text string.
+     * @throws FeatureBiometricException If the decryption fails due to padding issues.
+     */
+    override fun decrypt(cipher: Cipher, encryptedText: String): String {
+        val decodedText =
+            Base64.decode(encryptedText, Base64.NO_WRAP)
+        return decrypt(cipher = cipher, encryptedText = decodedText)
     }
 }

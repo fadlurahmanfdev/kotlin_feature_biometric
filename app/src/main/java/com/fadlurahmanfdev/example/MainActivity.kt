@@ -20,8 +20,11 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationC
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricDecryptSecureCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.FeatureBiometricEncryptSecureCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureBiometricException
+import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthentication
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthenticationRepository
 import com.fadlurahmanfdev.kotlin_feature_identity.plugin.KotlinFeatureBiometric
@@ -57,12 +60,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             desc = "Check whether fingerprint enrolled",
             enum = "IS_FINGERPRINT_ENROLLED"
         ),
-        FeatureModel(
-            featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "---------------------------",
-            desc = "---------------------------",
-            enum = "-"
-        ),
+
+
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Check Biometric Authentication Status",
@@ -75,12 +74,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             desc = "Check whether device can authenticate using Device Credential",
             enum = "CHECK_DEVICE_CREDENTIAL_AUTHENTICATION_STATUS"
         ),
-        FeatureModel(
-            featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "---------------------------",
-            desc = "---------------------------",
-            enum = "-"
-        ),
+
+
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Prompt Weak Biometric",
@@ -93,18 +88,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             desc = "Prompt Credential Biometric (Device Password)",
             enum = "PROMPT_CREDENTIAL_BIOMETRIC"
         ),
-        FeatureModel(
-            featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "---------------------------",
-            desc = "---------------------------",
-            enum = "-"
-        ),
-        FeatureModel(
-            featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Generate Secret Key",
-            desc = "Generate Secret Key",
-            enum = "GENERATE_SECRET_KEY"
-        ),
+
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
             title = "Is Biometric Changed?",
@@ -113,15 +97,15 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Prompt Biometric",
-            desc = "Prompt Encrypt Secure Biometric",
-            enum = "PROMPT_ENCRYPT_SECURE_BIOMETRIC"
+            title = "Encrypted Biometric",
+            desc = "Prompt encrypted biometric",
+            enum = "PROMPT_ENCRYPT_BIOMETRIC"
         ),
         FeatureModel(
             featureIcon = R.drawable.baseline_developer_mode_24,
-            title = "Prompt Decrypt Biometric",
-            desc = "Prompt Decrypt Secure Biometric",
-            enum = "PROMPT_DECRYPT_SECURE_BIOMETRIC"
+            title = "Decrypted Biometric",
+            desc = "Prompt decrypted biometric",
+            enum = "PROMPT_DECRYPT_BIOMETRIC"
         ),
     )
 
@@ -270,8 +254,6 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             }
                         }
                     )
-                } else {
-
                 }
 //                featureBiometric.authenticate(
 //                    title = "Encrypt Biometric",
@@ -292,47 +274,47 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
 //                )
             }
 
-            "GENERATE_SECRET_KEY" -> {
-                featureBiometric.generateSecretKey("fadlurahmanfdev")
-                val toast = Toast.makeText(
-                    this@MainActivity,
-                    "Successfully generate secret key",
-                    Toast.LENGTH_SHORT
-                )
-                toast.show()
-            }
+//            "GENERATE_SECRET_KEY" -> {
+//                featureBiometric.generateSecretKey("fadlurahmanfdev")
+//                val toast = Toast.makeText(
+//                    this@MainActivity,
+//                    "Successfully generate secret key",
+//                    Toast.LENGTH_SHORT
+//                )
+//                toast.show()
+//            }
 
             "IS_BIOMETRIC_CHANGED" -> {
                 val isBiometricChanged = featureBiometric.isBiometricChanged("fadlurahmanfdev")
                 Log.d(this::class.java.simpleName, "is biometric changed: $isBiometricChanged")
             }
 
-            "PROMPT_ENCRYPT_SECURE_BIOMETRIC" -> {
-                cancellationSignal = CancellationSignal()
-                featureBiometric.authenticateSecureEncrypt(
-                    title = "Encrypt Biometric",
-                    description = "This will encrypt your text into encrypted text",
+            "PROMPT_ENCRYPT_BIOMETRIC" -> {
+                featureAuthentication.secureAuthenticateBiometricEncrypt(
+                    title = "Title - Encrypt Biometric",
+                    subTitle = "Sub Title - Encrypt Biometric",
+                    description = "Desc - Encrypt Biometric",
                     negativeText = "Cancel",
                     alias = "fadlurahmanfdev",
-                    cancellationSignal = cancellationSignal,
-                    callBack = object : FeatureBiometricEncryptSecureCallBack {
-                        override fun onSuccessAuthenticateEncryptSecureBiometric(
+                    confirmationRequired = false,
+                    callBack = object : SecureAuthenticationEncryptCallBack {
+                        override fun onSuccessAuthenticate(
                             cipher: Cipher,
-                            encodedIvKey: String
+                            encodedIVKey: String
                         ) {
-                            encodedEncryptedPassword = featureBiometric.encrypt(cipher, plainText)
-                            this@MainActivity.encodedIvKey = encodedIvKey
+                            encodedEncryptedPassword = featureAuthentication.encrypt(cipher, plainText)
+                            this@MainActivity.encodedIvKey = encodedIVKey
                             Log.d(
                                 this@MainActivity::class.java.simpleName,
-                                "ENCODED IV KEY: ${this@MainActivity.encodedIvKey}"
+                                "encoded iv key: ${this@MainActivity.encodedIvKey}"
                             )
                             Log.d(
                                 this@MainActivity::class.java.simpleName,
-                                "ENCODED ENCRYPTED PASSWORD: $encodedEncryptedPassword"
+                                "encoded encrypted password: $encodedEncryptedPassword"
                             )
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Encrypt",
+                                "Successfully Encrypted Authenticate",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
@@ -341,35 +323,45 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                 )
             }
 
-            "PROMPT_DECRYPT_SECURE_BIOMETRIC" -> {
-                encodedIvKey = "moTbbjZiSzH7GvKkk21/OA=="
-                encodedEncryptedPassword = "aYynFWWEJHXNLpNxlUDjWQ=="
-                cancellationSignal = CancellationSignal()
-                featureBiometric.authenticateSecureDecrypt(
+            "PROMPT_DECRYPT_BIOMETRIC" -> {
+                featureAuthentication.secureAuthenticateBiometricDecrypt(
                     alias = "fadlurahmanfdev",
-                    encodedIvKey = encodedIvKey,
-                    title = "Decrypt Biometric",
-                    description = "This will decrypt your text into plain text",
+                    encodedIVKey = encodedIvKey,
+                    title = "Title - Decrypt Biometric",
+                    subTitle = "Sub Title - Decrypt Biometric",
+                    description = "Desc - Decrypt Biometric",
                     negativeText = "Cancel",
-                    cancellationSignal = cancellationSignal,
-                    callBack = object : FeatureBiometricDecryptSecureCallBack {
-                        override fun onSuccessAuthenticateDecryptSecureBiometric(cipher: Cipher) {
-                            val decodedPassword =
-                                Base64.decode(encodedEncryptedPassword, Base64.NO_WRAP)
-                            val plainPassword = featureBiometric.decrypt(cipher, decodedPassword)
+                    confirmationRequired = false,
+                    callBack = object : SecureAuthenticationDecryptCallBack {
+                        override fun onSuccessAuthenticate(cipher: Cipher) {
+//                            val decodedPassword =
+//                                Base64.decode(encodedEncryptedPassword, Base64.NO_WRAP)
+//                            val plainPassword = featureAuthentication.decrypt(cipher, decodedPassword)
+//                            Log.d(
+//                                this@MainActivity::class.java.simpleName,
+//                                "DECRYPTED PASSWORD: $plainPassword"
+//                            )
+//                            val toast = Toast.makeText(
+//                                this@MainActivity,
+//                                "Successfully Decrypt",
+//                                Toast.LENGTH_SHORT
+//                            )
+//                            toast.show()
+
+                            val plainPassword = featureAuthentication.decrypt(cipher, encodedEncryptedPassword)
                             Log.d(
                                 this@MainActivity::class.java.simpleName,
-                                "DECRYPTED PASSWORD: $plainPassword"
+                                "decrypted password: $plainPassword"
                             )
                             val toast = Toast.makeText(
                                 this@MainActivity,
-                                "Successfully Decrypt",
+                                "Successfully Decrypted Authenticate",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
                         }
 
-                        override fun onErrorAuthenticate(exception: FeatureBiometricException) {
+                        override fun onErrorAuthenticate(exception: FeatureIdentityException) {
                             super.onErrorAuthenticate(exception)
                             val toast = Toast.makeText(
                                 this@MainActivity,

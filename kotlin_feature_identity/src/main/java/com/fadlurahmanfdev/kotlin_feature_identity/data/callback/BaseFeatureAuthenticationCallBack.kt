@@ -17,7 +17,7 @@ interface AuthenticationCallBack : BaseFeatureAuthenticationCallBack {
 }
 
 interface SecureAuthenticationEncryptCallBack : BaseFeatureAuthenticationCallBack {
-    fun onSuccessAuthenticate(cipher: Cipher, ivKeyEncoded: String)
+    fun onSuccessAuthenticate(cipher: Cipher, encodedIVKey: String)
 }
 
 interface SecureAuthenticationDecryptCallBack : BaseFeatureAuthenticationCallBack {
