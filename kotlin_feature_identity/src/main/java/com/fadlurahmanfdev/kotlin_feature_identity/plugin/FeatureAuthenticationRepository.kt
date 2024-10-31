@@ -18,12 +18,8 @@ interface FeatureAuthenticationRepository {
     @RequiresApi(Build.VERSION_CODES.M)
     fun isDeviceCredentialEnrolled(): Boolean
     fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus
+    fun checkSecureAuthentication(): FeatureAuthenticationStatus
     fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean
-
-    fun getIntentAuthenticateDeviceCredential(
-        title: String,
-        description: String,
-    ): Intent
 
     @RequiresApi(Build.VERSION_CODES.R)
     fun authenticateDeviceCredential(

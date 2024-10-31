@@ -23,6 +23,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CheckAuthenticationStatusType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
 import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
 import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
@@ -128,17 +129,28 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
     }
 
     override fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val authenticatorStatus: Int = when (authenticatorType) {
-                FeatureAuthenticatorType.BIOMETRIC -> {
-                    biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
-                }
+        return when (authenticatorType) {
+            FeatureAuthenticatorType.BIOMETRIC -> checkAuthenticationStatus(type = CheckAuthenticationStatusType.BIOMETRIC_WEAK)
+            FeatureAuthenticatorType.DEVICE_CREDENTIAL -> checkAuthenticationStatus(type = CheckAuthenticationStatusType.DEVICE_CREDENTIAL)
+        }
+    }
 
-                FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
-                    biometricManager.canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                }
+    override fun checkSecureAuthentication(): FeatureAuthenticationStatus {
+        return checkAuthenticationStatus(type = CheckAuthenticationStatusType.BIOMETRIC_STRONG)
+    }
+
+    private fun checkAuthenticationStatus(
+        type: CheckAuthenticationStatusType
+    ): FeatureAuthenticationStatus {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val authenticatorType = when (type) {
+                CheckAuthenticationStatusType.BIOMETRIC_WEAK -> BiometricManager.Authenticators.BIOMETRIC_WEAK
+                CheckAuthenticationStatusType.BIOMETRIC_STRONG -> BiometricManager.Authenticators.BIOMETRIC_STRONG
+                CheckAuthenticationStatusType.DEVICE_CREDENTIAL -> BiometricManager.Authenticators.DEVICE_CREDENTIAL
             }
 
+            val authenticatorStatus =
+                biometricManager.canAuthenticate(authenticatorType)
             return when (authenticatorStatus) {
                 BiometricManager.BIOMETRIC_SUCCESS -> {
                     FeatureAuthenticationStatus.SUCCESS
@@ -164,33 +176,25 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     FeatureAuthenticationStatus.UNKNOWN
                 }
             }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val canAuthenticate: Boolean = when (authenticatorType) {
-                FeatureAuthenticatorType.BIOMETRIC -> {
-                    biometricManager.canAuthenticate() == BiometricManager.BIOMETRIC_SUCCESS
-                }
-
-                FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
-                    isDeviceCredentialEnrolled()
-                }
-            }
-            return when (canAuthenticate) {
-                true -> FeatureAuthenticationStatus.SUCCESS
-                false -> FeatureAuthenticationStatus.NONE_ENROLLED
-            }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val canAuthenticate: Boolean = when (authenticatorType) {
-                FeatureAuthenticatorType.BIOMETRIC -> {
-                    isFingerprintEnrolled()
+            when (type) {
+                CheckAuthenticationStatusType.BIOMETRIC_WEAK, CheckAuthenticationStatusType.BIOMETRIC_STRONG -> {
+                    val isEnrolled = isFingerprintEnrolled()
+                    return if (isEnrolled) {
+                        FeatureAuthenticationStatus.SUCCESS
+                    } else {
+                        FeatureAuthenticationStatus.NONE_ENROLLED
+                    }
                 }
 
-                FeatureAuthenticatorType.DEVICE_CREDENTIAL -> {
-                    isDeviceCredentialEnrolled()
+                CheckAuthenticationStatusType.DEVICE_CREDENTIAL -> {
+                    val isEnrolled = isDeviceCredentialEnrolled()
+                    return if (isEnrolled) {
+                        FeatureAuthenticationStatus.SUCCESS
+                    } else {
+                        FeatureAuthenticationStatus.NONE_ENROLLED
+                    }
                 }
-            }
-            return when (canAuthenticate) {
-                true -> FeatureAuthenticationStatus.SUCCESS
-                false -> FeatureAuthenticationStatus.NONE_ENROLLED
             }
         }
 
@@ -199,10 +203,6 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
 
     override fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean {
         return checkAuthenticatorStatus(authenticatorType) == FeatureAuthenticationStatus.SUCCESS
-    }
-
-    override fun getIntentAuthenticateDeviceCredential(title: String, description: String): Intent {
-        return keyguardManager.createConfirmDeviceCredentialIntent(title, description)
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -624,8 +624,8 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         callback: BiometricPrompt.AuthenticationCallback,
         negativeButtonCallback: DialogInterface.OnClickListener,
         cryptoObject: CryptoObject?,
-        setDeviceCredentialAllowed:Boolean = false,
-        setConfirmationRequired:Boolean = false,
+        setDeviceCredentialAllowed: Boolean = false,
+        setConfirmationRequired: Boolean = false,
         authenticator: Int,
         title: String,
         subTitle: String? = null,
@@ -654,8 +654,13 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     setConfirmationRequired(setConfirmationRequired)
                 }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    if (!setDeviceCredentialAllowed && authenticator != BiometricManager.Authenticators.DEVICE_CREDENTIAL) {
+                        setNegativeButton(negativeText, executor, negativeButtonCallback)
+                    }
+                }
             }
-            .setNegativeButton(negativeText, executor, negativeButtonCallback)
             .build()
 
         if (cryptoObject != null) {
