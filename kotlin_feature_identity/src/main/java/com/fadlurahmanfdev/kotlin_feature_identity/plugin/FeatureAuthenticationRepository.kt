@@ -2,6 +2,7 @@ package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
@@ -15,6 +16,8 @@ interface FeatureAuthenticationRepository {
      * Delete the existing key
      *
      * @param alias alias of the entry in which the generated key will appear in Android KeyStore. Must not be empty.
+     *
+     * @throws FeatureIdentityException [ErrorConstant.UNABLE_TO_DELETE_SECRET_KEY] if failed to delete the key
      */
     fun deleteSecretKey(alias: String)
 
@@ -60,14 +63,22 @@ interface FeatureAuthenticationRepository {
      *
      * @param authenticatorType type of authenticator (biometric or device credential)
      *
-     * @return [FeatureAuthenticationStatus]
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using authenticator, [FeatureAuthenticationStatus.NONE_ENROLLED] if the device is not enrolled with specific authenticator,
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for specific authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using specific authenticator.
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
+     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
      */
     fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus
 
     /**
      * Determines the status of the secure authentication
      *
-     * @return [FeatureAuthenticationStatus]
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using secure authenticator
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for secure authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using secure authenticator.
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
+     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
      */
     fun checkSecureAuthentication(): FeatureAuthenticationStatus
 
@@ -119,6 +130,17 @@ interface FeatureAuthenticationRepository {
         callBack: AuthenticationCallBack
     )
 
+    /**
+     * Determine the biometric change or not
+     *
+     * biometric detected changed if new biometric enrolled to the device, if delete biometric,
+     * its not detected as a change biometric.
+     *
+     * @param alias the alias of the secret key
+     *
+     * @return true if biometric detected changed, otherwise false
+     *
+     */
     fun isBiometricChanged(alias: String): Boolean
 
     /**

@@ -130,6 +130,13 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         return secretKey
     }
 
+    /**
+     * Delete the existing key
+     *
+     * @param alias alias of the entry in which the generated key will appear in Android KeyStore. Must not be empty.
+     *
+     * @throws FeatureIdentityException [ErrorConstant.UNABLE_TO_DELETE_SECRET_KEY] if failed to delete the key
+     */
     override fun deleteSecretKey(alias: String) {
         val keyStore = KeyStore.getInstance("AndroidKeyStore")
         keyStore.load(null)
@@ -151,6 +158,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Determines the device's support fingerprint.
+     *
+     * @return true, if device support biometric, otherwise is false.
+     */
     override fun isDeviceSupportFingerprint(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
@@ -161,6 +173,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         return false
     }
 
+    /**
+     * Determines the device's support face authentication.
+     *
+     * @return true, if device support face authentication, otherwise is false.
+     */
     override fun isDeviceSupportFaceAuth(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) || context.packageManager.hasSystemFeature(
@@ -173,20 +190,46 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Determines the device's support biometric feature, either fingerprint or face authentication.
+     *
+     * @return true, if device support biometric, otherwise is false.
+     */
     override fun isDeviceSupportBiometric(): Boolean {
         return (isDeviceSupportFingerprint() || isDeviceSupportFaceAuth())
     }
 
+    /**
+     * Determines the device's already enrolled with fingerprint
+     *
+     * @return true, if device already enrolled, otherwise is false.
+     */
     @RequiresApi(Build.VERSION_CODES.M)
     override fun isFingerprintEnrolled(): Boolean {
         return fingerprintManager.hasEnrolledFingerprints()
     }
 
+    /**
+     * Determines the device's credential is enrolled (PIN, Password, etc)
+     *
+     * @return true, if device's credential already enrolled, otherwise is false.
+     */
     @RequiresApi(Build.VERSION_CODES.M)
     override fun isDeviceCredentialEnrolled(): Boolean {
         return keyguardManager.isDeviceSecure
     }
 
+    /**
+     * Determines the status of the authenticator
+     *
+     * @param authenticatorType type of authenticator (biometric or device credential)
+     *
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using authenticator, [FeatureAuthenticationStatus.NONE_ENROLLED] if the device is not enrolled with specific authenticator,
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for specific authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using specific authenticator.
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
+     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
+     */
     override fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus {
         return when (authenticatorType) {
             FeatureAuthenticatorType.BIOMETRIC -> checkAuthenticationStatus(type = CheckAuthenticationStatusType.BIOMETRIC_WEAK)
@@ -194,6 +237,15 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Determines the status of the secure authentication
+     *
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using secure authenticator
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for secure authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using secure authenticator.
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
+     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
+     */
     override fun checkSecureAuthentication(): FeatureAuthenticationStatus {
         return checkAuthenticationStatus(type = CheckAuthenticationStatusType.BIOMETRIC_STRONG)
     }
@@ -260,10 +312,27 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         return FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION
     }
 
+    /**
+     * Determines whether device can authenticate using specific authenticator
+     *
+     * @param authenticatorType type of authenticator (biometric or device credential)
+     *
+     * @return true if device can authenticate, otherwise is false
+     */
     override fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean {
         return checkAuthenticatorStatus(authenticatorType) == FeatureAuthenticationStatus.SUCCESS
     }
 
+    /**
+     * Authenticate using device credential
+     *
+     * @param title the title will be shown in prompt device credential
+     * @param subTitle the sub-title will be shown in prompt device credential
+     * @param description the description will be shown in prompt device credential
+     * @param negativeText the canceled button text will be shown to user
+     * @param callBack the callback of authenticate result
+     *
+     */
     @RequiresApi(Build.VERSION_CODES.R)
     override fun authenticateDeviceCredential(
         title: String,
@@ -309,6 +378,16 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         )
     }
 
+    /**
+     * Authenticate using device biometric.
+     *
+     * @param title the title will be shown in prompt device credential
+     * @param subTitle the sub-title will be shown in prompt device credential
+     * @param description the description will be shown in prompt device credential
+     * @param negativeText the canceled button text will be shown to user
+     * @param callBack the callback of authenticate result
+     *
+     */
     override fun authenticateBiometric(
         title: String,
         subTitle: String?,
@@ -393,6 +472,17 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Determine the biometric change or not
+     *
+     * biometric detected changed if new biometric enrolled to the device, if delete biometric,
+     * its not detected as a change biometric.
+     *
+     * @param alias the alias of the secret key
+     *
+     * @return true if biometric detected changed, otherwise false
+     *
+     */
     override fun isBiometricChanged(alias: String): Boolean {
         try {
             val cipher = getCipher()
@@ -414,6 +504,18 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Secure authenticate using encrypt biometric
+     *
+     * @param alias the alias of the secret key
+     * @param title the title will be shown in prompt device credential
+     * @param subTitle the sub-title will be shown in prompt device credential
+     * @param description the description will be shown in prompt device credential
+     * @param negativeText the canceled button text will be shown to user
+     * @param confirmationRequired if true, user will be asked by confirmation before success authenticate
+     * @param callBack the callback of authenticate result
+     *
+     */
     override fun secureAuthenticateBiometricEncrypt(
         alias: String,
         title: String,
@@ -560,6 +662,19 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    /**
+     * Secure authenticate using encrypt biometric
+     *
+     * @param alias the alias of the secret key
+     * @param encodedIVKey the IV Key get from encrypt
+     * @param title the title will be shown in prompt device credential
+     * @param subTitle the sub-title will be shown in prompt device credential
+     * @param description the description will be shown in prompt device credential
+     * @param negativeText the canceled button text will be shown to user
+     * @param confirmationRequired if true, user will be asked by confirmation before success authenticate
+     * @param callBack the callback of authenticate result
+     *
+     */
     override fun secureAuthenticateBiometricDecrypt(
         alias: String,
         encodedIVKey: String,
