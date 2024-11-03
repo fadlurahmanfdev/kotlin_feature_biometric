@@ -13,39 +13,39 @@ import javax.crypto.Cipher
 
 interface FeatureAuthenticationRepository {
     /**
-     * Delete the existing key
+     * Deletes an existing key from the Android KeyStore.
      *
-     * @param alias alias of the entry in which the generated key will appear in Android KeyStore. Must not be empty.
+     * @param alias The alias of the entry to delete from the KeyStore. Must not be empty.
      *
-     * @throws FeatureIdentityException [ErrorConstant.UNABLE_TO_DELETE_SECRET_KEY] if failed to delete the key
+     * @throws FeatureIdentityException if unable to delete the key, with error code [ErrorConstant.UNABLE_TO_DELETE_SECRET_KEY].
      */
     fun deleteSecretKey(alias: String)
 
     /**
-     * Determines the device's support fingerprint.
+     * Checks if the device supports fingerprint authentication.
      *
-     * @return true, if device support biometric, otherwise is false.
+     * @return true if the device supports fingerprint authentication; false otherwise.
      */
     fun isDeviceSupportFingerprint(): Boolean
 
     /**
-     * Determines the device's support face authentication.
+     * Checks if the device supports face authentication.
      *
-     * @return true, if device support face authentication, otherwise is false.
+     * @return true if the device supports face authentication; false otherwise.
      */
     fun isDeviceSupportFaceAuth(): Boolean
 
     /**
-     * Determines the device's support biometric feature, either fingerprint or face authentication.
+     * Checks if the device supports biometric authentication, either fingerprint or face authentication.
      *
-     * @return true, if device support biometric, otherwise is false.
+     * @return true if the device supports any biometric feature; false otherwise.
      */
     fun isDeviceSupportBiometric(): Boolean
 
     /**
-     * Determines the device's already enrolled with fingerprint
+     * Checks if the device has at least one fingerprint enrolled.
      *
-     * @return true, if device already enrolled, otherwise is false.
+     * @return true if a fingerprint is enrolled; false otherwise.
      */
     @RequiresApi(Build.VERSION_CODES.M)
     fun isFingerprintEnrolled(): Boolean
@@ -59,47 +59,65 @@ interface FeatureAuthenticationRepository {
     fun isDeviceCredentialEnrolled(): Boolean
 
     /**
-     * Determines the status of the authenticator
+     * Checks the status of the specified authenticator.
      *
-     * @param authenticatorType type of authenticator (biometric or device credential)
+     * @param authenticatorType The type of authenticator (biometric or device credential).
      *
-     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using authenticator, [FeatureAuthenticationStatus.NONE_ENROLLED] if the device is not enrolled with specific authenticator,
-     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for specific authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using specific authenticator.
-     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
-     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
-     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the device can authenticate using the specified authenticator;
+     * [FeatureAuthenticationStatus.NONE_ENROLLED] if the device has no enrolled data for the specified authenticator;
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device lacks the hardware for the specified authenticator;
+     * [FeatureAuthenticationStatus.UNAVAILABLE] if the device is currently unable to authenticate with the specified authenticator;
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if a security update is required for the device to authenticate;
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the OS version does not support authentication;
+     * [FeatureAuthenticationStatus.UNKNOWN] if an unknown status is encountered.
      */
     fun checkAuthenticatorStatus(authenticatorType: FeatureAuthenticatorType): FeatureAuthenticationStatus
 
     /**
-     * Determines the status of the secure authentication
+     * Checks the status of secure authentication on the device.
      *
-     * @return [FeatureAuthenticationStatus.SUCCESS] if the status is enable to authenticate using secure authenticator
-     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device didn't have hardware for secure authenticator, [FeatureAuthenticationStatus.UNAVAILABLE] if the device currently unable to authenticate using secure authenticator.
-     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if the device ask user to update the os before continue authenticate,
-     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the device unable to authenticate caused by unsupported OS
-     * [FeatureAuthenticationStatus.UNKNOWN] if unknown status happen
+     * @return [FeatureAuthenticationStatus.SUCCESS] if the device can authenticate securely;
+     * [FeatureAuthenticationStatus.NO_HARDWARE] if the device lacks hardware for secure authentication;
+     * [FeatureAuthenticationStatus.UNAVAILABLE] if secure authentication is currently unavailable;
+     * [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] if a security update is required for secure authentication;
+     * [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] if the OS version does not support secure authentication;
+     * [FeatureAuthenticationStatus.UNKNOWN] if an unknown status is encountered.
      */
     fun checkSecureAuthentication(): FeatureAuthenticationStatus
 
     /**
-     * Determines whether device can authenticate using specific authenticator
+     * Determines whether the device can authenticate using the specified authenticator.
      *
-     * @param authenticatorType type of authenticator (biometric or device credential)
+     * @param authenticatorType The type of authenticator (biometric or device credential).
      *
-     * @return true if device can authenticate, otherwise is false
+     * @return true if the device can authenticate using the specified authenticator; false otherwise.
      */
     fun canAuthenticate(authenticatorType: FeatureAuthenticatorType): Boolean
 
     /**
-     * Authenticate using device credential
+     * Authenticate using device credentials.
      *
-     * @param title the title will be shown in prompt device credential
-     * @param subTitle the sub-title will be shown in prompt device credential
-     * @param description the description will be shown in prompt device credential
-     * @param negativeText the canceled button text will be shown to user
-     * @param callBack the callback of authenticate result
+     * @param title The title displayed in the device credential prompt.
+     * @param subTitle The sub-title displayed in the device credential prompt.
+     * @param description The description shown in the device credential prompt.
+     * @param negativeText The text for the cancel button in the prompt.
+     * @param confirmationRequired Whether confirmation is required for authentication.
+     * @param callBack The callback to handle the authentication results:
      *
+     * - **onSuccessAuthenticate**: Called when the authentication is successful, indicating that
+     *   the user has correctly authenticated using their device credentials.
+     *
+     * - **onFailedAuthenticate**: Called when the authentication fails, usually because the
+     *   credentials provided do not match, or due to insufficient attempts. The user may be prompted
+     *   to retry or use other authentication methods if available.
+     *
+     * - **onErrorAuthenticate**: Called when there is an error during authentication, such as
+     *   a system-related issue (e.g., the device doesn’t support device credentials, or the user
+     *   cannot authenticate). This callback provides an error code and message detailing the
+     *   reason for failure, which can be handled appropriately.
+     *
+     * - **onNegativeButtonClicked**: Called when the user presses the cancel button (negative action),
+     *   which dismisses the authentication prompt and halts the authentication process.
      */
     @RequiresApi(Build.VERSION_CODES.R)
     fun authenticateDeviceCredential(
@@ -112,14 +130,29 @@ interface FeatureAuthenticationRepository {
     )
 
     /**
-     * Authenticate using device biometric.
+     * Authenticate using biometric authentication (fingerprint or face).
      *
-     * @param title the title will be shown in prompt device credential
-     * @param subTitle the sub-title will be shown in prompt device credential
-     * @param description the description will be shown in prompt device credential
-     * @param negativeText the canceled button text will be shown to user
-     * @param callBack the callback of authenticate result
+     * @param title The title displayed in the biometric prompt.
+     * @param subTitle The sub-title displayed in the biometric prompt.
+     * @param description The description shown in the biometric prompt.
+     * @param negativeText The text for the cancel button in the prompt.
+     * @param confirmationRequired Whether confirmation is required for authentication.
+     * @param callBack The callback to handle the authentication results:
      *
+     * - **onSuccessAuthenticate**: Called when biometric authentication is successful, indicating
+     *   that the user’s fingerprint or face was recognized. Upon success, further actions may proceed.
+     *
+     * - **onFailedAuthenticate**: Called when biometric authentication fails, usually due to an
+     *   unrecognized fingerprint or face scan. The user can retry authentication.
+     *
+     * - **onErrorAuthenticate**: Called when an error occurs during authentication, such as system
+     *   issues, sensor malfunction, or unsupported OS versions. Provides an error code and message
+     *   explaining the error type. For example:
+     *   - Error code for OS not supported if the minimum OS version for biometric authentication is not met.
+     *   - Error code and message indicating specific sensor issues or interruptions.
+     *
+     * - **onNegativeButtonClicked**: Called when the user cancels authentication by pressing the
+     *   cancel button. The prompt is dismissed, and the authentication process is stopped.
      */
     fun authenticateBiometric(
         title: String,
@@ -131,29 +164,53 @@ interface FeatureAuthenticationRepository {
     )
 
     /**
-     * Determine the biometric change or not
+     * Checks if the biometric data on the device has changed.
      *
-     * biometric detected changed if new biometric enrolled to the device, if delete biometric,
-     * its not detected as a change biometric.
+     * A biometric change is detected if new biometric data (e.g., a fingerprint) has been enrolled on the device.
+     * Deleting biometric data is not detected as a change.
      *
-     * @param alias the alias of the secret key
+     * @param alias The alias of the secret key used to verify biometric integrity.
      *
-     * @return true if biometric detected changed, otherwise false
+     * @return true if a biometric change is detected; false otherwise.
      *
+     * @throws FeatureIdentityException [ErrorConstant.UNABLE_TO_DETECT_BIOMETRIC_CHANGE] if an error occurs while checking for biometric changes.
      */
     fun isBiometricChanged(alias: String): Boolean
 
     /**
-     * Secure authenticate using encrypt biometric
+     * Securely authenticate using biometric encryption.
      *
-     * @param alias the alias of the secret key
-     * @param title the title will be shown in prompt device credential
-     * @param subTitle the sub-title will be shown in prompt device credential
-     * @param description the description will be shown in prompt device credential
-     * @param negativeText the canceled button text will be shown to user
-     * @param confirmationRequired if true, user will be asked by confirmation before success authenticate
-     * @param callBack the callback of authenticate result
+     * This function performs biometric authentication with encryption, using a specified alias to retrieve or generate
+     * a secret key. The encryption is achieved through a cipher initialized with the secret key. If the key becomes invalid
+     * (e.g., due to a security change like adding a new fingerprint), the key must be deleted and regenerated.
      *
+     * @param alias The alias of the secret key used for encryption. If the key is invalidated, the user must delete it
+     *              and generate a new one to continue using secure authentication.
+     * @param title The title displayed in the biometric prompt.
+     * @param subTitle The sub-title displayed in the biometric prompt.
+     * @param description The description shown in the biometric prompt.
+     * @param negativeText The text for the cancel button in the prompt.
+     * @param confirmationRequired Whether confirmation is required before successful authentication.
+     * @param callBack The callback to handle authentication results, including:
+     *
+     * - **onSuccessAuthenticate**: Called when biometric authentication is successful. This callback provides
+     *   the encrypted cipher and IV (Initialization Vector) in Base64 format, allowing further secure operations.
+     *
+     * - **onFailedAuthenticate**: Called when biometric authentication fails, typically due to unrecognized biometric data.
+     *   The user can attempt authentication again if desired.
+     *
+     * - **onErrorAuthenticate**: Called when an error occurs during authentication. Provides a code and message detailing
+     *   the error, such as:
+     *   - **Error Constant `KEY_PERMANENTLY_INVALIDATED`**: This occurs if the key has been invalidated. For example, adding
+     *     or removing fingerprints will invalidate the key, requiring the user to delete the existing key and generate a
+     *     new one with the same alias.
+     *   - **Error Constant `CIPHER_MISSING`**: Indicates a missing cipher, which is required for secure authentication.
+     *   - **Error Constant `OS_NOT_SUPPORTED`**: Returned when the device OS version does not support the necessary
+     *     biometric functionality.
+     *   - **General Exception**: If another exception is caught, an error message will indicate the issue (e.g., encryption setup errors).
+     *
+     * - **onNegativeButtonClicked**: Called when the user presses the cancel button on the biometric prompt, halting the
+     *   authentication process.
      */
     fun secureAuthenticateBiometricEncrypt(
         alias: String,
@@ -166,17 +223,37 @@ interface FeatureAuthenticationRepository {
     )
 
     /**
-     * Secure authenticate using encrypt biometric
+     * Securely authenticate using biometric decryption.
      *
-     * @param alias the alias of the secret key
-     * @param encodedIVKey the IV Key get from encrypt
-     * @param title the title will be shown in prompt device credential
-     * @param subTitle the sub-title will be shown in prompt device credential
-     * @param description the description will be shown in prompt device credential
-     * @param negativeText the canceled button text will be shown to user
-     * @param confirmationRequired if true, user will be asked by confirmation before success authenticate
-     * @param callBack the callback of authenticate result
+     * This method decrypts data using a biometric-protected secret key. If the key is invalidated
+     * (e.g., due to biometric changes like adding a new fingerprint), it cannot be used for decryption.
+     * In such cases, users must generate a new key and re-encrypt the data.
      *
+     * @param alias The alias of the secret key used for decryption.
+     * @param encodedIVKey The IV key obtained from encryption, encoded as a string.
+     * @param title The title displayed in the biometric prompt.
+     * @param subTitle The sub-title displayed in the biometric prompt.
+     * @param description The description shown in the biometric prompt.
+     * @param negativeText The text for the cancel button in the prompt.
+     * @param confirmationRequired Whether confirmation is required before successful authentication.
+     * @param callBack The callback to handle authentication results, including the decrypted cipher.
+     *
+     * `callBack` provides the following methods:
+     * - `onSuccessAuthenticate(cipher: Cipher)`: Called when authentication is successful. The provided
+     *   `cipher` can be used to securely decrypt the data using the correct secret key.
+     * - `onErrorAuthenticate(exception: FeatureIdentityException)`: Called when an error occurs during
+     *   authentication. The exception details the cause of failure, such as:
+     *      - `ErrorConstant.SECRET_KEY_MISSING`: The required secret key is missing. Re-encryption
+     *        with a new key may be necessary.
+     *      - `ErrorConstant.CIPHER_MISSING`: Cipher was not properly initialized for secure decryption.
+     *      - `ErrorConstant.KEY_PERMANENTLY_INVALIDATED`: The key is invalidated due to biometric changes
+     *        (e.g., new fingerprint added). A new key must be generated to proceed.
+     *      - `ErrorConstant.UNABLE_SECURE_AUTHENTICATE`: A generic error, often caused by device or
+     *        OS issues.
+     * - `onFailedAuthenticate()`: Called when biometric authentication fails but no critical error
+     *   occurs. This typically means the user did not authenticate successfully, and they may retry.
+     * - `onNegativeButtonClicked(which: Int)`: Called when the user taps the negative button (e.g.,
+     *   "Cancel") on the biometric prompt. This cancels the authentication process.
      */
     fun secureAuthenticateBiometricDecrypt(
         alias: String,
