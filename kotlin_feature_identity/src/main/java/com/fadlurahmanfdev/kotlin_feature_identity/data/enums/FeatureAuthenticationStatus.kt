@@ -1,6 +1,6 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.data.enums
 
-enum class FeatureBiometricStatus {
+enum class FeatureAuthenticationStatus {
     /**
      * Can authenticate using biometrics.
      */
@@ -9,16 +9,18 @@ enum class FeatureBiometricStatus {
     /**
      * No biometric hardware available on the device.
      */
-    NO_BIOMETRIC_AVAILABLE,
+    NO_HARDWARE,
 
     /**
      * Biometric hardware is currently unavailable. Please check again later.
      */
-    BIOMETRIC_UNAVAILABLE,
+    UNAVAILABLE,
 
     /**
      * No biometric credentials are set up.
      */
     NONE_ENROLLED,
+    SECURITY_UPDATE_REQUIRED,
+    UNSUPPORTED_OS_VERSION,
     UNKNOWN,
 }
