@@ -1,6 +1,5 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
-import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -35,7 +34,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
-class FeatureAuthentication(private val activity: Activity) : FeatureAuthenticationRepository {
+class FeatureAuthentication(private val activity: FragmentActivity) : FeatureAuthenticationRepository {
 
     private lateinit var fingerprintManager: FingerprintManager
     private lateinit var biometricManager: BiometricManager
@@ -935,7 +934,7 @@ class FeatureAuthentication(private val activity: Activity) : FeatureAuthenticat
             }
             .build()
 
-        val prompt = BiometricPrompt(activity as FragmentActivity, executor, callback)
+        val prompt = BiometricPrompt(activity, executor, callback)
 
         if (cryptoObject != null) {
             prompt.authenticate(promptInfo, cryptoObject)
