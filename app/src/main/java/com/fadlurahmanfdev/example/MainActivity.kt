@@ -253,8 +253,8 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             toast.show()
                         }
 
-                        override fun onNegativeButtonClicked() {
-                            super.onNegativeButtonClicked()
+                        override fun onNegativeButtonClicked(which:Int) {
+                            super.onNegativeButtonClicked(which)
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Negative Button Clicked authenticate",
@@ -373,6 +373,16 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             )
                             toast.show()
                         }
+
+                        override fun onNegativeButtonClicked(which:Int) {
+                            super.onNegativeButtonClicked(which)
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Negative Button Clicked authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
                     }
                 )
             }
@@ -428,6 +438,16 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             val toast = Toast.makeText(
                                 this@MainActivity,
                                 "Failed authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onNegativeButtonClicked(which:Int) {
+                            super.onNegativeButtonClicked(which)
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Negative Button Clicked authenticate",
                                 Toast.LENGTH_SHORT
                             )
                             toast.show()
