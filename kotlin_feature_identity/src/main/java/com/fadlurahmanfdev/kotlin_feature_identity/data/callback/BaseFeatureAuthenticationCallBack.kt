@@ -4,7 +4,7 @@ import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentit
 import javax.crypto.Cipher
 
 interface BaseFeatureAuthenticationCallBack {
-    fun onNegativeButtonClicked(which: Int) {}
+    fun onNegativeButtonClicked() {}
     fun onFailedAuthenticate()
 
     fun onErrorAuthenticate(exception: FeatureIdentityException)

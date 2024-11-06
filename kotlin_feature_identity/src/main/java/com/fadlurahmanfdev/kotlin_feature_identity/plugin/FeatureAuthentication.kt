@@ -1,12 +1,9 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
+import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
-import android.hardware.biometrics.BiometricPrompt.CryptoObject
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
@@ -18,7 +15,11 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.biometric.BiometricPrompt.CryptoObject
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
@@ -34,7 +35,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
-class FeatureAuthentication(private val context: Context) : FeatureAuthenticationRepository {
+class FeatureAuthentication(private val activity: Activity) : FeatureAuthenticationRepository {
 
     private lateinit var fingerprintManager: FingerprintManager
     private lateinit var biometricManager: BiometricManager
@@ -43,15 +44,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             fingerprintManager =
-                context.getSystemService(Context.FINGERPRINT_SERVICE) as FingerprintManager
+                activity.getSystemService(Context.FINGERPRINT_SERVICE) as FingerprintManager
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            biometricManager =
-                context.getSystemService(Context.BIOMETRIC_SERVICE) as BiometricManager
+            biometricManager = BiometricManager.from(activity.applicationContext)
         }
 
-        keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        keyguardManager = activity.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
     }
 
     private fun getCipher(): Cipher {
@@ -165,7 +165,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
      */
     override fun isDeviceSupportFingerprint(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
+            return activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return fingerprintManager.isHardwareDetected
         }
@@ -180,11 +180,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
      */
     override fun isDeviceSupportFaceAuth(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return context.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) || context.packageManager.hasSystemFeature(
+            return activity.packageManager.hasSystemFeature(PackageManager.FEATURE_FACE) || activity.packageManager.hasSystemFeature(
                 "com.samsung.android.bio.face"
             )
         } else {
-            return context.packageManager.hasSystemFeature(
+            return activity.packageManager.hasSystemFeature(
                 "com.samsung.android.bio.face"
             )
         }
@@ -366,14 +366,10 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
             description = description,
             authenticator = BiometricManager.Authenticators.DEVICE_CREDENTIAL,
             negativeText = negativeText,
-            negativeButtonCallback = object : DialogInterface.OnClickListener {
-                override fun onClick(dialog: DialogInterface?, which: Int) {
-                    callBack.onNegativeButtonClicked(which)
-                }
-            },
+            setConfirmationRequired = confirmationRequired,
             cryptoObject = null,
             callback = object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     callBack.onSuccessAuthenticate()
                 }
@@ -383,14 +379,18 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     callBack.onFailedAuthenticate()
                 }
 
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    callBack.onErrorAuthenticate(
-                        FeatureIdentityException(
-                            code = "$errorCode",
-                            message = errString?.toString()
+                    if (errorCode == 10) {
+                        callBack.onCanceled()
+                    } else {
+                        callBack.onErrorAuthenticate(
+                            FeatureIdentityException(
+                                code = "$errorCode",
+                                message = errString.toString()
+                            )
                         )
-                    )
+                    }
                 }
             }
         )
@@ -439,16 +439,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                 subTitle = subTitle,
                 description = description,
                 authenticator = authenticator,
-                setDeviceCredentialAllowed = true,
                 negativeText = negativeText,
-                negativeButtonCallback = object : DialogInterface.OnClickListener {
-                    override fun onClick(dialog: DialogInterface?, which: Int) {
-                        callBack.onNegativeButtonClicked(which)
-                    }
-                },
+                setConfirmationRequired = confirmationRequired,
                 cryptoObject = null,
                 callback = object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                         super.onAuthenticationSucceeded(result)
                         callBack.onSuccessAuthenticate()
                     }
@@ -458,14 +453,21 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                         callBack.onFailedAuthenticate()
                     }
 
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) {
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                         super.onAuthenticationError(errorCode, errString)
-                        callBack.onErrorAuthenticate(
-                            FeatureIdentityException(
-                                code = "$errorCode",
-                                message = errString?.toString()
+                        if (errorCode == 10) {
+                            callBack.onCanceled()
+                        } else if (errorCode == 13) {
+                            // cancel authenticate biometric
+                            callBack.onNegativeButtonClicked()
+                        } else {
+                            callBack.onErrorAuthenticate(
+                                FeatureIdentityException(
+                                    code = "$errorCode",
+                                    message = errString.toString()
+                                )
                             )
-                        )
+                        }
                     }
                 }
             )
@@ -599,19 +601,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     title = title,
                     subTitle = subTitle,
                     description = description,
-                    setDeviceCredentialAllowed = false,
                     authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                     negativeText = negativeText,
-                    negativeButtonCallback = object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            callBack.onNegativeButtonClicked(which)
-                        }
-                    },
+                    setConfirmationRequired = confirmationRequired,
                     cryptoObject = BiometricPrompt.CryptoObject(cipher),
                     callback = object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                             super.onAuthenticationSucceeded(result)
-                            if (result?.cryptoObject?.cipher == null) {
+                            if (result.cryptoObject?.cipher == null) {
                                 callBack.onErrorAuthenticate(
                                     FeatureIdentityException(
                                         code = ErrorConstant.CIPHER_MISSING,
@@ -621,9 +618,9 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                                 return
                             }
 
-                            val cipherResult = result.cryptoObject.cipher
+                            val cipherResult = result.cryptoObject!!.cipher
                             val encodedIvKey =
-                                Base64.encodeToString(cipherResult.iv, Base64.NO_WRAP)
+                                Base64.encodeToString(cipherResult!!.iv, Base64.NO_WRAP)
                             callBack.onSuccessAuthenticate(
                                 cipherResult,
                                 encodedIvKey
@@ -637,13 +634,13 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
 
                         override fun onAuthenticationError(
                             errorCode: Int,
-                            errString: CharSequence?
+                            errString: CharSequence
                         ) {
                             super.onAuthenticationError(errorCode, errString)
                             callBack.onErrorAuthenticate(
                                 FeatureIdentityException(
                                     code = "$errorCode",
-                                    message = errString?.toString()
+                                    message = errString.toString()
                                 )
                             )
                         }
@@ -787,19 +784,14 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                     title = title,
                     subTitle = subTitle,
                     description = description,
-                    setDeviceCredentialAllowed = false,
                     authenticator = BiometricManager.Authenticators.BIOMETRIC_STRONG,
                     negativeText = negativeText,
-                    negativeButtonCallback = object : DialogInterface.OnClickListener {
-                        override fun onClick(dialog: DialogInterface?, which: Int) {
-                            callBack.onNegativeButtonClicked(which)
-                        }
-                    },
+                    setConfirmationRequired = confirmationRequired,
                     cryptoObject = BiometricPrompt.CryptoObject(cipher),
                     callback = object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) {
+                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                             super.onAuthenticationSucceeded(result)
-                            if (result?.cryptoObject?.cipher == null) {
+                            if (result.cryptoObject?.cipher == null) {
                                 callBack.onErrorAuthenticate(
                                     FeatureIdentityException(
                                         code = ErrorConstant.CIPHER_MISSING,
@@ -809,8 +801,8 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                                 return
                             }
 
-                            val cipherResult = result.cryptoObject.cipher
-                            callBack.onSuccessAuthenticate(cipherResult)
+                            val cipherResult = result.cryptoObject!!.cipher
+                            callBack.onSuccessAuthenticate(cipherResult!!)
                         }
 
                         override fun onAuthenticationFailed() {
@@ -820,7 +812,7 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
 
                         override fun onAuthenticationError(
                             errorCode: Int,
-                            errString: CharSequence?
+                            errString: CharSequence
                         ) {
                             super.onAuthenticationError(errorCode, errString)
                             callBack.onErrorAuthenticate(
@@ -905,12 +897,11 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         }
     }
 
+    //    @RequiresApi(Build.VERSION_CODES.P)
     @RequiresApi(Build.VERSION_CODES.P)
     private fun generalAuthenticateBiometricAndroidP(
         callback: BiometricPrompt.AuthenticationCallback,
-        negativeButtonCallback: DialogInterface.OnClickListener,
         cryptoObject: CryptoObject?,
-        setDeviceCredentialAllowed: Boolean = false,
         setConfirmationRequired: Boolean = false,
         authenticator: Int,
         title: String,
@@ -918,9 +909,8 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
         description: String,
         negativeText: String,
     ) {
-        val cancellationSignal = CancellationSignal()
-        val executor = ContextCompat.getMainExecutor(context)
-        val biometricPrompt = BiometricPrompt.Builder(context)
+        val executor = ContextCompat.getMainExecutor(activity)
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .apply {
                 if (!subTitle.isNullOrEmpty()) {
@@ -934,34 +924,23 @@ class FeatureAuthentication(private val context: Context) : FeatureAuthenticatio
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    setDeviceCredentialAllowed(setDeviceCredentialAllowed)
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     setConfirmationRequired(setConfirmationRequired)
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    if (!setDeviceCredentialAllowed && authenticator != BiometricManager.Authenticators.DEVICE_CREDENTIAL) {
-                        setNegativeButton(negativeText, executor, negativeButtonCallback)
+                    if (authenticator != BiometricManager.Authenticators.DEVICE_CREDENTIAL) {
+                        setNegativeButtonText(negativeText)
                     }
                 }
             }
             .build()
 
+        val prompt = BiometricPrompt(activity as FragmentActivity, executor, callback)
+
         if (cryptoObject != null) {
-            biometricPrompt.authenticate(
-                cryptoObject,
-                cancellationSignal,
-                executor,
-                callback
-            )
+            prompt.authenticate(promptInfo, cryptoObject)
         } else {
-            biometricPrompt.authenticate(
-                cancellationSignal,
-                executor,
-                callback
-            )
+            prompt.authenticate(promptInfo)
         }
     }
 
