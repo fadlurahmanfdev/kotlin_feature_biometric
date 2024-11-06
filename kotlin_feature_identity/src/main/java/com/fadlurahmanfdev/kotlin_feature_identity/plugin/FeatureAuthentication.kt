@@ -1,10 +1,12 @@
 package com.fadlurahmanfdev.kotlin_feature_identity.plugin
 
-import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.hardware.biometrics.BiometricManager
+import android.hardware.biometrics.BiometricPrompt
+import android.hardware.biometrics.BiometricPrompt.CryptoObject
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
 import android.os.CancellationSignal
@@ -16,9 +18,6 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.RequiresApi
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
-import android.hardware.biometrics.BiometricPrompt.CryptoObject
 import androidx.core.content.ContextCompat
 import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
 import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
