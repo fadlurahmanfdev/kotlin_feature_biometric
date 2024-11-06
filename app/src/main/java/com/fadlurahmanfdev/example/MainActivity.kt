@@ -214,7 +214,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     description = "Desc - Weak Biometric",
                     subTitle = "SubTitle - Weak Biometric",
                     negativeText = "Negative Text",
-                    confirmationRequired = false,
+                    confirmationRequired = true,
                     callBack = object : AuthenticationCallBack {
                         override fun onSuccessAuthenticate() {
                             val toast = Toast.makeText(
@@ -242,6 +242,26 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                             )
                             toast.show()
                         }
+
+                        override fun onCanceled() {
+                            super.onCanceled()
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Cancel authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
+
+                        override fun onNegativeButtonClicked() {
+                            super.onNegativeButtonClicked()
+                            val toast = Toast.makeText(
+                                this@MainActivity,
+                                "Negative Button Clicked authenticate",
+                                Toast.LENGTH_SHORT
+                            )
+                            toast.show()
+                        }
                     }
                 )
             }
@@ -253,7 +273,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                         subTitle = "Sub Title - Device Credential",
                         description = "Desc - Device Credential",
                         negativeText = "Negative Text",
-                        confirmationRequired = false,
+                        confirmationRequired = true,
                         callBack = object : AuthenticationCallBack {
                             override fun onSuccessAuthenticate() {
                                 val toast = Toast.makeText(
@@ -277,6 +297,16 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                                 val toast = Toast.makeText(
                                     this@MainActivity,
                                     "Failed authenticate",
+                                    Toast.LENGTH_SHORT
+                                )
+                                toast.show()
+                            }
+
+                            override fun onCanceled() {
+                                super.onCanceled()
+                                val toast = Toast.makeText(
+                                    this@MainActivity,
+                                    "Cancel authenticate",
                                     Toast.LENGTH_SHORT
                                 )
                                 toast.show()
