@@ -51,26 +51,26 @@ Checks the status of the specified authenticator.
 | `authenticatorType`   | `FeatureAuthenticatorType` | yes      | The type of authenticator (biometric or device credential). |
 
 Return:
-- [FeatureAuthenticationStatus.SUCCESS] - if the device can authenticate using the specified authenticator.
-- [FeatureAuthenticationStatus.NONE_ENROLLED] - if the device has no enrolled data for the specified authenticator.
-- [FeatureAuthenticationStatus.NO_HARDWARE] - if the device lacks the hardware for the specified authenticator.
-- [FeatureAuthenticationStatus.UNAVAILABLE] - if the device is currently unable to authenticate with the specified authenticator.
-- [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] - if a security update is required for the device to authenticate.
-- [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] - if the OS version does not support authentication.
-- [FeatureAuthenticationStatus.UNKNOWN] - if an unknown status is encountered.
+- `FeatureAuthenticationStatus.SUCCESS` - if the device can authenticate using the specified authenticator.
+- `FeatureAuthenticationStatus.NONE_ENROLLED` - if the device has no enrolled data for the specified authenticator.
+- `FeatureAuthenticationStatus.NO_HARDWARE` - if the device lacks the hardware for the specified authenticator.
+- `FeatureAuthenticationStatus.UNAVAILABLE` - if the device is currently unable to authenticate with the specified authenticator.
+- `FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED` - if a security update is required for the device to authenticate.
+- `FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION` - if the OS version does not support authentication.
+- `FeatureAuthenticationStatus.UNKNOWN` - if an unknown status is encountered.
 
 ## Check Secure Authentication
 
 Checks the status of secure authentication on the device.
 
 Return:
-- [FeatureAuthenticationStatus.SUCCESS] - if the device can authenticate using the specified authenticator.
-- [FeatureAuthenticationStatus.NONE_ENROLLED] - if the device has no enrolled data for the specified authenticator.
-- [FeatureAuthenticationStatus.NO_HARDWARE] - if the device lacks the hardware for the specified authenticator.
-- [FeatureAuthenticationStatus.UNAVAILABLE] - if the device is currently unable to authenticate with the specified authenticator.
-- [FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED] - if a security update is required for the device to authenticate.
-- [FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION] - if the OS version does not support authentication.
-- [FeatureAuthenticationStatus.UNKNOWN] - if an unknown status is encountered.
+- `FeatureAuthenticationStatus.SUCCESS` - if the device can authenticate using the specified authenticator.
+- `FeatureAuthenticationStatus.NONE_ENROLLED` - if the device has no enrolled data for the specified authenticator.
+- `FeatureAuthenticationStatus.NO_HARDWARE` - if the device lacks the hardware for the specified authenticator.
+- `FeatureAuthenticationStatus.UNAVAILABLE` - if the device is currently unable to authenticate with the specified authenticator.
+- `FeatureAuthenticationStatus.SECURITY_UPDATE_REQUIRED` - if a security update is required for the device to authenticate.
+- `FeatureAuthenticationStatus.UNSUPPORTED_OS_VERSION` - if the OS version does not support authentication.
+- `FeatureAuthenticationStatus.UNKNOWN` - if an unknown status is encountered.
 
 ## Can Authenticate
 
