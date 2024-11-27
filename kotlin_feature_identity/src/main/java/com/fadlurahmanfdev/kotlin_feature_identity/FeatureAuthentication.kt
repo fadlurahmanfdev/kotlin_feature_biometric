@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.plugin
+package com.fadlurahmanfdev.kotlin_feature_identity
 
 import android.app.KeyguardManager
 import android.content.Context
@@ -19,14 +19,15 @@ import android.util.Base64
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
-import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.CheckAuthenticationStatusType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
+import com.fadlurahmanfdev.kotlin_feature_identity.core.constant.ErrorConstant
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.AuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationEncryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.CheckAuthenticationStatusType
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.FeatureAuthenticationStatus
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.FeatureAuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.core.exception.FeatureIdentityException
+import com.fadlurahmanfdev.kotlin_feature_identity.data.repository.FeatureAuthenticationRepository
 import java.security.KeyStore
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher

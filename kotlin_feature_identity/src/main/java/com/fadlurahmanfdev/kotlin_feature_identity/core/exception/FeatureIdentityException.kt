@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.data.exception
+package com.fadlurahmanfdev.kotlin_feature_identity.core.exception
 
 data class FeatureIdentityException(
     val code: String,

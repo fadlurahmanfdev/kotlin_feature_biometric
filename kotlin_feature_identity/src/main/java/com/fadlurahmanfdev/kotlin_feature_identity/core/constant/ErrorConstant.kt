@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.constant
+package com.fadlurahmanfdev.kotlin_feature_identity.core.constant
 
 object ErrorConstant {
     const val OS_NOT_SUPPORTED = "OS_NOT_SUPPORTED"

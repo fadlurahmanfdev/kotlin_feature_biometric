@@ -12,13 +12,13 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.fadlurahmanfdev.example.data.FeatureModel
 import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
-import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthentication
-import com.fadlurahmanfdev.kotlin_feature_identity.plugin.FeatureAuthenticationRepository
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.AuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationEncryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.FeatureAuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.core.exception.FeatureIdentityException
+import com.fadlurahmanfdev.kotlin_feature_identity.FeatureAuthentication
+import com.fadlurahmanfdev.kotlin_feature_identity.data.repository.FeatureAuthenticationRepository
 import javax.crypto.Cipher
 
 class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {

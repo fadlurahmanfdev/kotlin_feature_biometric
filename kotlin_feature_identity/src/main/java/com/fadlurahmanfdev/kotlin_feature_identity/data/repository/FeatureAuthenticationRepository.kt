@@ -1,14 +1,14 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.plugin
+package com.fadlurahmanfdev.kotlin_feature_identity.data.repository
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.fadlurahmanfdev.kotlin_feature_identity.constant.ErrorConstant
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.AuthenticationCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationDecryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.callback.SecureAuthenticationEncryptCallBack
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticationStatus
-import com.fadlurahmanfdev.kotlin_feature_identity.data.enums.FeatureAuthenticatorType
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
+import com.fadlurahmanfdev.kotlin_feature_identity.core.constant.ErrorConstant
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.AuthenticationCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationDecryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.callback.SecureAuthenticationEncryptCallBack
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.FeatureAuthenticationStatus
+import com.fadlurahmanfdev.kotlin_feature_identity.core.enums.FeatureAuthenticatorType
+import com.fadlurahmanfdev.kotlin_feature_identity.core.exception.FeatureIdentityException
 import javax.crypto.Cipher
 
 interface FeatureAuthenticationRepository {

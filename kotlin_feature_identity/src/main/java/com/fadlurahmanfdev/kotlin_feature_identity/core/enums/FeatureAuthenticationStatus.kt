@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.data.enums
+package com.fadlurahmanfdev.kotlin_feature_identity.core.enums
 
 enum class FeatureAuthenticationStatus {
     /**

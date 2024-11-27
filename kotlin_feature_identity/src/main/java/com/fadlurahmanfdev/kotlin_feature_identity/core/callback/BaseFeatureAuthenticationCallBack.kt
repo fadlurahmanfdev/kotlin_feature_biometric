@@ -1,6 +1,6 @@
-package com.fadlurahmanfdev.kotlin_feature_identity.data.callback
+package com.fadlurahmanfdev.kotlin_feature_identity.core.callback
 
-import com.fadlurahmanfdev.kotlin_feature_identity.data.exception.FeatureIdentityException
+import com.fadlurahmanfdev.kotlin_feature_identity.core.exception.FeatureIdentityException
 import javax.crypto.Cipher
 
 interface BaseFeatureAuthenticationCallBack {
