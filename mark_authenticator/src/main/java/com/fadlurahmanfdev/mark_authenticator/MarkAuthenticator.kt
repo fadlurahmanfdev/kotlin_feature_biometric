@@ -1,18 +1,11 @@
 package com.fadlurahmanfdev.mark_authenticator
 
-import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
-import android.hardware.biometrics.BiometricPrompt.CryptoObject
 import android.hardware.fingerprint.FingerprintManager
 import android.os.Build
-import android.os.CancellationSignal
-import android.os.Handler
-import android.os.Looper
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
@@ -76,7 +69,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
      *
      * @throws MarkAuthenticatorException if the specific alias key already exist before with code [ErrorConstant.SECRET_KEY_ALREADY_EXIST]
      * */
-    override fun generateSecretKey(alias: String): SecretKey {
+    override fun generateSecretKey(alias: String, invalidatedByBiometricEnrollment: Boolean): SecretKey {
         var secretKey: SecretKey? = getSecretKey(alias)
 
         if (secretKey != null) {
@@ -93,7 +86,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val keyGenerator =
                 KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-            keyGenerator.init(generateKeyGenParameterSpec(alias))
+            keyGenerator.init(generateKeyGenParameterSpec(alias, invalidatedByBiometricEnrollment = invalidatedByBiometricEnrollment))
             secretKey = keyGenerator.generateKey()
         } else {
             val keyGenerator = KeyGenerator.getInstance("AES")
@@ -105,7 +98,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun generateKeyGenParameterSpec(alias: String): KeyGenParameterSpec {
+    private fun generateKeyGenParameterSpec(alias: String, invalidatedByBiometricEnrollment: Boolean = false): KeyGenParameterSpec {
         return KeyGenParameterSpec.Builder(
             alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
@@ -114,7 +107,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
             setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
             setUserAuthenticationRequired(true)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                setInvalidatedByBiometricEnrollment(true)
+                setInvalidatedByBiometricEnrollment(invalidatedByBiometricEnrollment)
             }
         }.build()
     }
@@ -504,6 +497,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
         alias: String,
         title: String,
         subTitle: String?,
+        invalidatedByBiometricEnrollment: Boolean,
         description: String,
         negativeText: String,
         confirmationRequired: Boolean,
@@ -512,7 +506,7 @@ class MarkAuthenticator(private val context: Context) : BaseMarkAuthenticator() 
         var secretKey = getSecretKey(alias = alias)
 
         if (secretKey == null) {
-            secretKey = generateSecretKey(alias)
+            secretKey = generateSecretKey(alias, invalidatedByBiometricEnrollment = invalidatedByBiometricEnrollment)
         }
 
         val cipher = cipher()

@@ -3,9 +3,7 @@ package com.fadlurahmanfdev.mark_authenticator.base
 import android.app.KeyguardManager
 import android.hardware.biometrics.BiometricManager
 import android.hardware.fingerprint.FingerprintManager
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.mark_authenticator.core.callback.WeakAuthenticationCallBack
 import com.fadlurahmanfdev.mark_authenticator.core.callback.SecureAuthenticationDecryptCallBack
@@ -56,7 +54,7 @@ abstract class BaseMarkAuthenticator {
      *
      * @param alias Key Identifier
      * */
-    abstract fun generateSecretKey(alias: String): SecretKey
+    abstract fun generateSecretKey(alias: String, invalidatedByBiometricEnrollment: Boolean = false): SecretKey
 
     /**
      * Deletes an existing key from the Android KeyStore.
@@ -276,6 +274,7 @@ abstract class BaseMarkAuthenticator {
         alias: String,
         title: String,
         subTitle: String?,
+        invalidatedByBiometricEnrollment: Boolean = false,
         description: String,
         negativeText: String,
         confirmationRequired: Boolean,

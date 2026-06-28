@@ -1,6 +1,5 @@
 package com.fadlurahmanfdev.example
 
-import android.os.Build
 import android.os.Bundle
 import android.os.CancellationSignal
 import android.util.Log
@@ -355,11 +354,12 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
             "PROMPT_ENCRYPT_BIOMETRIC" -> {
                 markAuthenticator.secureAuthenticateBiometricEncrypt(
                     activity = this,
+                    alias = "fadlurahmanfdev",
                     title = "Title - Encrypt Biometric",
                     subTitle = "Sub Title - Encrypt Biometric",
+                    invalidatedByBiometricEnrollment = true,
                     description = "Desc - Encrypt Biometric",
                     negativeText = "Cancel",
-                    alias = "fadlurahmanfdev",
                     confirmationRequired = false,
                     callBack = object : SecureAuthenticationEncryptCallBack {
                         override fun onSuccessAuthenticate(
@@ -478,7 +478,7 @@ class MainActivity : AppCompatActivity(), ListExampleAdapter.Callback {
                     subTitle = "Sub Title - Encrypt Biometric",
                     cipher = markAuthenticator.cipher(),
                     secretKey = markAuthenticator.getSecretKey(alias = alias)
-                        ?: markAuthenticator.generateSecretKey(alias = alias),
+                        ?: markAuthenticator.generateSecretKey(alias = alias, invalidatedByBiometricEnrollment = true),
                     description = "Desc - Encrypt Biometric",
                     negativeText = "Cancel",
                     confirmationRequired = false,
