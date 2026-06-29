@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.fadlurahmanfdev.mark_authenticator"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 21
@@ -42,7 +42,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    api("androidx.biometric:biometric:1.1.0")
+    api(libs.androidx.biometric)
 }
 
 mavenPublishing {
