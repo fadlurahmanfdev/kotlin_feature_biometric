@@ -4,8 +4,8 @@ import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 
@@ -15,11 +15,6 @@ import javax.crypto.SecretKey
  * It groups capability checks, prompt-based authentication, and secure cryptography helpers.
  */
 interface MarkAuthenticatorApi {
-    /**
-     * Creates a new AES/GCM cipher instance used in secure authentication flows.
-     */
-    fun cipher(): Cipher
-
     /**
      * Gets a secret key from Android KeyStore by [alias].
      *

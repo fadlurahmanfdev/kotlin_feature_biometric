@@ -4,6 +4,7 @@ import android.content.pm.PackageManager
 import android.hardware.biometrics.BiometricManager
 import android.os.Build
 import android.security.keystore.KeyPermanentlyInvalidatedException
+import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
@@ -16,10 +17,10 @@ import com.fadlurahmanfdev.mark_authenticator.internal.dependency.DeviceCapabili
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptDataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptRequest
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.SecretKeyDataSource
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationType
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationType
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.domain.exception.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
 import java.nio.charset.StandardCharsets
 import java.security.InvalidKeyException
 import javax.crypto.BadPaddingException
@@ -36,7 +37,7 @@ internal class MarkAuthenticatorInternal(
     private val base64DataSource: Base64DataSource,
 ) {
 
-    fun cipher(): Cipher {
+    private fun cipher(): Cipher {
         return cipherDataSource.createCipher()
     }
 
@@ -271,6 +272,7 @@ internal class MarkAuthenticatorInternal(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun isBiometricChanged(alias: String): Boolean {
         return try {
             val secretKey = getSecretKey(alias) ?: return false
@@ -290,6 +292,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         alias: String,
@@ -316,6 +319,7 @@ internal class MarkAuthenticatorInternal(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         title: String,
@@ -385,6 +389,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         alias: String,
@@ -414,6 +419,7 @@ internal class MarkAuthenticatorInternal(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         encodedIVKey: String,

@@ -13,9 +13,9 @@ import com.fadlurahmanfdev.mark_authenticator.internal.dependency.DeviceCapabili
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptDataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptRequest
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.SecretKeyDataSource
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
-import com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.domain.exception.MarkAuthenticatorException
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals

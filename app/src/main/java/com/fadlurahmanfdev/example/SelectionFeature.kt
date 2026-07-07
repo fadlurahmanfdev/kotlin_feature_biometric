@@ -1,5 +1,6 @@
 package com.fadlurahmanfdev.example
 
+import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -14,8 +15,8 @@ import com.fadlurahmanfdev.mark_authenticator.api.MarkAuthenticator
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.domain.exception.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 
 /**
@@ -161,12 +162,14 @@ class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
             }
 
             FeatureAction.BIOMETRIC_STATUS -> {
-                val status = markAuthenticator.checkAuthenticatorStatus(MarkAuthenticatorMethod.BIOMETRIC)
+                val status =
+                    markAuthenticator.checkAuthenticatorStatus(MarkAuthenticatorMethod.BIOMETRIC)
                 showResult("Biometric status: $status")
             }
 
             FeatureAction.DEVICE_CREDENTIAL_STATUS -> {
-                val status = markAuthenticator.checkAuthenticatorStatus(MarkAuthenticatorMethod.DEVICE_CREDENTIAL)
+                val status =
+                    markAuthenticator.checkAuthenticatorStatus(MarkAuthenticatorMethod.DEVICE_CREDENTIAL)
                 showResult("Device credential status: $status")
             }
 
@@ -227,7 +230,11 @@ class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
             }
 
             FeatureAction.BIOMETRIC_CHANGED -> {
-                showResult("Biometric changed: ${markAuthenticator.isBiometricChanged(alias)}")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    showResult("Biometric changed: ${markAuthenticator.isBiometricChanged(alias)}")
+                } else {
+                    showResult("Device not supported to check biometric changed")
+                }
             }
 
             FeatureAction.DELETE_SECRET_KEY -> {
@@ -238,39 +245,46 @@ class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
             }
 
             FeatureAction.SECURE_ENCRYPT -> {
-                markAuthenticator.secureAuthenticateBiometricEncrypt(
-                    activity = this,
-                    alias = alias,
-                    title = "Secure Encrypt",
-                    subTitle = "Strong Biometric",
-                    invalidatedByBiometricEnrollment = true,
-                    description = "Authenticate to encrypt sample text.",
-                    negativeText = "Cancel",
-                    confirmationRequired = false,
-                    callback = object : SecureAuthenticationEncryptCallback {
-                        override fun onSuccessAuthenticate(cipher: Cipher, encodedIVKey: String) {
-                            encryptedText = markAuthenticator.encrypt(cipher, plainText)
-                            encodedIvKey = encodedIVKey
-                            showResult(
-                                "Encryption success.\n" +
-                                    "Encrypted: $encryptedText\n" +
-                                    "Encoded IV: $encodedIvKey",
-                            )
-                        }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    markAuthenticator.secureAuthenticateBiometricEncrypt(
+                        activity = this,
+                        alias = alias,
+                        title = "Secure Encrypt",
+                        subTitle = "Strong Biometric",
+                        invalidatedByBiometricEnrollment = true,
+                        description = "Authenticate to encrypt sample text.",
+                        negativeText = "Cancel",
+                        confirmationRequired = false,
+                        callback = object : SecureAuthenticationEncryptCallback {
+                            override fun onSuccessAuthenticate(
+                                cipher: Cipher,
+                                encodedIVKey: String
+                            ) {
+                                encryptedText = markAuthenticator.encrypt(cipher, plainText)
+                                encodedIvKey = encodedIVKey
+                                showResult(
+                                    "Encryption success.\n" +
+                                            "Encrypted: $encryptedText\n" +
+                                            "Encoded IV: $encodedIvKey",
+                                )
+                            }
 
-                        override fun onErrorAuthenticate(exception: MarkAuthenticatorException) {
-                            showResult("Secure encrypt error: ${exception.code} (${exception.message})")
-                        }
+                            override fun onErrorAuthenticate(exception: MarkAuthenticatorException) {
+                                showResult("Secure encrypt error: ${exception.code} (${exception.message})")
+                            }
 
-                        override fun onFailedAuthenticate() {
-                            showResult("Secure encrypt failed. Try again.")
-                        }
+                            override fun onFailedAuthenticate() {
+                                showResult("Secure encrypt failed. Try again.")
+                            }
 
-                        override fun onCanceled() {
-                            showResult("Secure encrypt canceled by user.")
-                        }
-                    },
-                )
+                            override fun onCanceled() {
+                                showResult("Secure encrypt canceled by user.")
+                            }
+                        },
+                    )
+                } else {
+                    showResult("Device not supported to perform encrypt authentication")
+                }
             }
 
             FeatureAction.SECURE_DECRYPT -> {
@@ -281,34 +295,39 @@ class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
                     return
                 }
 
-                markAuthenticator.secureAuthenticateBiometricDecrypt(
-                    activity = this,
-                    alias = alias,
-                    encodedIVKey = localIv,
-                    title = "Secure Decrypt",
-                    subTitle = "Strong Biometric",
-                    description = "Authenticate to decrypt sample text.",
-                    negativeText = "Cancel",
-                    confirmationRequired = false,
-                    callback = object : SecureAuthenticationDecryptCallback {
-                        override fun onSuccessAuthenticate(cipher: Cipher) {
-                            val decrypted = markAuthenticator.decrypt(cipher, localEncryptedText)
-                            showResult("Decryption success. Plain text: $decrypted")
-                        }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    markAuthenticator.secureAuthenticateBiometricDecrypt(
+                        activity = this,
+                        alias = alias,
+                        encodedIVKey = localIv,
+                        title = "Secure Decrypt",
+                        subTitle = "Strong Biometric",
+                        description = "Authenticate to decrypt sample text.",
+                        negativeText = "Cancel",
+                        confirmationRequired = false,
+                        callback = object : SecureAuthenticationDecryptCallback {
+                            override fun onSuccessAuthenticate(cipher: Cipher) {
+                                val decrypted =
+                                    markAuthenticator.decrypt(cipher, localEncryptedText)
+                                showResult("Decryption success. Plain text: $decrypted")
+                            }
 
-                        override fun onErrorAuthenticate(exception: MarkAuthenticatorException) {
-                            showResult("Secure decrypt error: ${exception.code} (${exception.message})")
-                        }
+                            override fun onErrorAuthenticate(exception: MarkAuthenticatorException) {
+                                showResult("Secure decrypt error: ${exception.code} (${exception.message})")
+                            }
 
-                        override fun onFailedAuthenticate() {
-                            showResult("Secure decrypt failed. Try again.")
-                        }
+                            override fun onFailedAuthenticate() {
+                                showResult("Secure decrypt failed. Try again.")
+                            }
 
-                        override fun onCanceled() {
-                            showResult("Secure decrypt canceled by user.")
-                        }
-                    },
-                )
+                            override fun onCanceled() {
+                                showResult("Secure decrypt canceled by user.")
+                            }
+                        },
+                    )
+                } else {
+                    showResult("Device not supported to perform decrypt authentication")
+                }
             }
         }
     }

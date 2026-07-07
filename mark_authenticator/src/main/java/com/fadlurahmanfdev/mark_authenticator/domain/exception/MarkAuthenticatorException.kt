@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.mark_authenticator.core.exception
+package com.fadlurahmanfdev.mark_authenticator.domain.exception
 
 /**
  * Domain exception exposed to consumer applications.

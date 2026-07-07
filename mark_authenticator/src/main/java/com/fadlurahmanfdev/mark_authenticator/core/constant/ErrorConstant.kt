@@ -1,7 +1,7 @@
 package com.fadlurahmanfdev.mark_authenticator.core.constant
 
 /**
- * Error codes returned by [com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException].
+ * Error codes returned by [com.fadlurahmanfdev.mark_authenticator.domain.exception.MarkAuthenticatorException].
  */
 object ErrorConstant {
     /** Authentication succeeded but platform callback did not return cipher. */

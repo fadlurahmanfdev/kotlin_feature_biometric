@@ -1,12 +1,14 @@
 package com.fadlurahmanfdev.mark_authenticator.api
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.FragmentActivity
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
 import com.fadlurahmanfdev.mark_authenticator.internal.MarkAuthenticatorInternal
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.AndroidBase64DataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.AndroidDeviceCapabilityDataSource
@@ -30,11 +32,6 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         promptDataSource = AndroidPromptDataSource(context),
         base64DataSource = AndroidBase64DataSource(),
     )
-
-    /**
-     * Creates a new AES/GCM cipher instance used by secure authentication flows.
-     */
-    override fun cipher(): Cipher = internal.cipher()
 
     /**
      * Gets secret key from Android KeyStore by [alias].
@@ -148,6 +145,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     /**
      * Detects whether biometric enrollment changed after key creation for [alias].
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun isBiometricChanged(alias: String): Boolean = internal.isBiometricChanged(alias = alias)
 
     /**
@@ -155,6 +153,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
      *
      * This overload manages key and cipher internally.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         alias: String,
@@ -180,6 +179,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     /**
      * Authenticates using strong biometric and prepares provided [cipher]/[secretKey] for encryption.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         title: String,
@@ -207,6 +207,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
      *
      * This overload manages key and cipher internally.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         alias: String,
@@ -232,6 +233,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     /**
      * Authenticates using strong biometric and prepares provided [cipher]/[secretKey] for decryption.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         encodedIVKey: String,
