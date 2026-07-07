@@ -9,12 +9,7 @@ import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationE
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
 import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticationStatus
 import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
-import com.fadlurahmanfdev.mark_authenticator.internal.MarkAuthenticatorInternal
-import com.fadlurahmanfdev.mark_authenticator.internal.dependency.capability.AndroidDeviceCapabilityDataSource
-import com.fadlurahmanfdev.mark_authenticator.internal.dependency.crypto.AndroidSecretKeyDataSource
-import com.fadlurahmanfdev.mark_authenticator.internal.dependency.crypto.DefaultCipherDataSource
-import com.fadlurahmanfdev.mark_authenticator.internal.dependency.encoding.AndroidBase64DataSource
-import com.fadlurahmanfdev.mark_authenticator.internal.dependency.prompt.AndroidPromptDataSource
+import com.fadlurahmanfdev.mark_authenticator.internal.composition.MarkAuthenticatorCompositionRoot
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 
@@ -25,20 +20,7 @@ import javax.crypto.SecretKey
  * consumer-friendly API.
  */
 class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
-    private val internal = MarkAuthenticatorInternal(
-        capabilityDataSource = AndroidDeviceCapabilityDataSource(context),
-        secretKeyDataSource = AndroidSecretKeyDataSource(),
-        cipherDataSource = DefaultCipherDataSource(),
-        promptDataSource = AndroidPromptDataSource(context),
-        base64DataSource = AndroidBase64DataSource(),
-    )
-
-    /**
-     * Gets secret key from Android KeyStore by [alias].
-     *
-     * @return existing key, or `null` when key is not found.
-     */
-    override fun getSecretKey(alias: String): SecretKey? = internal.getSecretKey(alias)
+    private val delegate: MarkAuthenticatorApi = MarkAuthenticatorCompositionRoot.create(context)
 
     /**
      * Generates a new Android KeyStore secret key for [alias].
@@ -48,7 +30,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     override fun generateSecretKey(
         alias: String,
         invalidatedByBiometricEnrollment: Boolean,
-    ): SecretKey = internal.generateSecretKey(
+    ): SecretKey = delegate.generateSecretKey(
         alias = alias,
         invalidatedByBiometricEnrollment = invalidatedByBiometricEnrollment,
     )
@@ -56,49 +38,49 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     /**
      * Deletes key stored under [alias]. This is a no-op when key does not exist.
      */
-    override fun deleteSecretKey(alias: String) = internal.deleteSecretKey(alias = alias)
+    override fun deleteSecretKey(alias: String) = delegate.deleteSecretKey(alias = alias)
 
     /**
      * Checks whether fingerprint hardware is available.
      */
-    override fun isDeviceSupportFingerprint(): Boolean = internal.isDeviceSupportFingerprint()
+    override fun isDeviceSupportFingerprint(): Boolean = delegate.isDeviceSupportFingerprint()
 
     /**
      * Checks whether face-authentication hardware is available.
      */
-    override fun isDeviceSupportFaceAuth(): Boolean = internal.isDeviceSupportFaceAuth()
+    override fun isDeviceSupportFaceAuth(): Boolean = delegate.isDeviceSupportFaceAuth()
 
     /**
      * Checks whether at least one biometric method is supported.
      */
-    override fun isDeviceSupportBiometric(): Boolean = internal.isDeviceSupportBiometric()
+    override fun isDeviceSupportBiometric(): Boolean = delegate.isDeviceSupportBiometric()
 
     /**
      * Checks whether biometric credential is already enrolled.
      */
-    override fun isBiometricEnrolled(): Boolean = internal.isBiometricEnrolled()
+    override fun isBiometricEnrolled(): Boolean = delegate.isBiometricEnrolled()
 
     /**
      * Checks whether PIN/pattern/password is already enrolled.
      */
-    override fun isDeviceCredentialEnrolled(): Boolean = internal.isDeviceCredentialEnrolled()
+    override fun isDeviceCredentialEnrolled(): Boolean = delegate.isDeviceCredentialEnrolled()
 
     /**
      * Returns normalized status for [method].
      */
     override fun checkAuthenticatorStatus(method: MarkAuthenticatorMethod): MarkAuthenticationStatus =
-        internal.checkAuthenticatorStatus(method = method)
+        delegate.checkAuthenticatorStatus(method = method)
 
     /**
      * Returns normalized status for secure authentication (strong biometric).
      */
-    override fun checkSecureAuthentication(): MarkAuthenticationStatus = internal.checkSecureAuthentication()
+    override fun checkSecureAuthentication(): MarkAuthenticationStatus = delegate.checkSecureAuthentication()
 
     /**
      * Returns `true` when [method] can authenticate in current device state.
      */
     override fun canAuthenticate(method: MarkAuthenticatorMethod): Boolean =
-        internal.canAuthenticate(method = method)
+        delegate.canAuthenticate(method = method)
 
     /**
      * Shows device credential authentication prompt.
@@ -111,7 +93,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: WeakAuthenticationCallback,
-    ) = internal.authenticateDeviceCredential(
+    ) = delegate.authenticateDeviceCredential(
         activity = activity,
         title = title,
         subTitle = subTitle,
@@ -132,7 +114,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: WeakAuthenticationCallback,
-    ) = internal.authenticateBiometric(
+    ) = delegate.authenticateBiometric(
         activity = activity,
         title = title,
         subTitle = subTitle,
@@ -146,7 +128,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
      * Detects whether biometric enrollment changed after key creation for [alias].
      */
     @RequiresApi(Build.VERSION_CODES.M)
-    override fun isBiometricChanged(alias: String): Boolean = internal.isBiometricChanged(alias = alias)
+    override fun isBiometricChanged(alias: String): Boolean = delegate.isBiometricChanged(alias = alias)
 
     /**
      * Authenticates using strong biometric and prepares cipher for encryption.
@@ -164,7 +146,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: SecureAuthenticationEncryptCallback,
-    ) = internal.secureAuthenticateBiometricEncrypt(
+    ) = delegate.secureAuthenticateBiometricEncrypt(
         activity = activity,
         alias = alias,
         title = title,
@@ -190,7 +172,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: SecureAuthenticationEncryptCallback,
-    ) = internal.secureAuthenticateBiometricEncrypt(
+    ) = delegate.secureAuthenticateBiometricEncrypt(
         activity = activity,
         title = title,
         cipher = cipher,
@@ -218,7 +200,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: SecureAuthenticationDecryptCallback,
-    ) = internal.secureAuthenticateBiometricDecrypt(
+    ) = delegate.secureAuthenticateBiometricDecrypt(
         activity = activity,
         alias = alias,
         encodedIVKey = encodedIVKey,
@@ -245,7 +227,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
         negativeText: String,
         confirmationRequired: Boolean,
         callback: SecureAuthenticationDecryptCallback,
-    ) = internal.secureAuthenticateBiometricDecrypt(
+    ) = delegate.secureAuthenticateBiometricDecrypt(
         activity = activity,
         encodedIVKey = encodedIVKey,
         cipher = cipher,
@@ -262,12 +244,12 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
      * Encrypts plaintext using authenticated [cipher], then returns Base64 encoded text.
      */
     override fun encrypt(cipher: Cipher, plainText: String): String =
-        internal.encrypt(cipher = cipher, plainText = plainText)
+        delegate.encrypt(cipher = cipher, plainText = plainText)
 
     /**
      * Decrypts raw encrypted bytes using authenticated [cipher].
      */
-    override fun decrypt(cipher: Cipher, encryptedText: ByteArray): String = internal.decrypt(
+    override fun decrypt(cipher: Cipher, encryptedText: ByteArray): String = delegate.decrypt(
         cipher = cipher,
         encryptedText = encryptedText,
     )
@@ -275,7 +257,7 @@ class MarkAuthenticator(context: Context) : MarkAuthenticatorApi {
     /**
      * Decrypts Base64 encoded text using authenticated [cipher].
      */
-    override fun decrypt(cipher: Cipher, encryptedText: String): String = internal.decrypt(
+    override fun decrypt(cipher: Cipher, encryptedText: String): String = delegate.decrypt(
         cipher = cipher,
         encryptedText = encryptedText,
     )

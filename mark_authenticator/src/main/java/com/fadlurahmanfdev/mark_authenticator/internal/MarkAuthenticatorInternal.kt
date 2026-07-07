@@ -7,6 +7,7 @@ import android.security.keystore.KeyPermanentlyInvalidatedException
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
+import com.fadlurahmanfdev.mark_authenticator.api.MarkAuthenticatorApi
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
@@ -35,13 +36,13 @@ internal class MarkAuthenticatorInternal(
     private val cipherDataSource: CipherDataSource,
     private val promptDataSource: PromptDataSource,
     private val base64DataSource: Base64DataSource,
-) {
+) : MarkAuthenticatorApi {
 
     private fun cipher(): Cipher {
         return cipherDataSource.createCipher()
     }
 
-    fun getSecretKey(alias: String): SecretKey? {
+    private fun getSecretKey(alias: String): SecretKey? {
         return try {
             secretKeyDataSource.getSecretKey(alias)
         } catch (e: Throwable) {
@@ -53,7 +54,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun generateSecretKey(alias: String, invalidatedByBiometricEnrollment: Boolean): SecretKey {
+    override fun generateSecretKey(alias: String, invalidatedByBiometricEnrollment: Boolean): SecretKey {
         if (getSecretKey(alias) != null) {
             throw MarkAuthenticatorException(
                 code = ErrorConstant.SECRET_KEY_ALREADY_EXIST,
@@ -75,7 +76,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun deleteSecretKey(alias: String) {
+    override fun deleteSecretKey(alias: String) {
         if (getSecretKey(alias) == null) return
 
         try {
@@ -89,7 +90,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun isDeviceSupportFingerprint(): Boolean {
+    override fun isDeviceSupportFingerprint(): Boolean {
         return when {
             capabilityDataSource.sdkInt >= Build.VERSION_CODES.Q ->
                 capabilityDataSource.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)
@@ -101,7 +102,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun isDeviceSupportFaceAuth(): Boolean {
+    override fun isDeviceSupportFaceAuth(): Boolean {
         return if (capabilityDataSource.sdkInt >= Build.VERSION_CODES.Q) {
             capabilityDataSource.hasSystemFeature(PackageManager.FEATURE_FACE) ||
                 capabilityDataSource.hasSystemFeature("com.samsung.android.bio.face")
@@ -110,15 +111,15 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun isDeviceSupportBiometric(): Boolean {
+    override fun isDeviceSupportBiometric(): Boolean {
         return isDeviceSupportFingerprint() || isDeviceSupportFaceAuth()
     }
 
-    fun isBiometricEnrolled(): Boolean {
+    override fun isBiometricEnrolled(): Boolean {
         return checkAuthenticatorStatus(MarkAuthenticatorMethod.BIOMETRIC) == MarkAuthenticationStatus.SUCCESS
     }
 
-    fun isDeviceCredentialEnrolled(): Boolean {
+    override fun isDeviceCredentialEnrolled(): Boolean {
         return if (capabilityDataSource.sdkInt >= Build.VERSION_CODES.M) {
             capabilityDataSource.isDeviceSecure()
         } else {
@@ -182,7 +183,7 @@ internal class MarkAuthenticatorInternal(
         return MarkAuthenticationStatus.UNSUPPORTED_OS_VERSION
     }
 
-    fun checkAuthenticatorStatus(method: MarkAuthenticatorMethod): MarkAuthenticationStatus {
+    override fun checkAuthenticatorStatus(method: MarkAuthenticatorMethod): MarkAuthenticationStatus {
         return when (method) {
             MarkAuthenticatorMethod.BIOMETRIC ->
                 checkAuthenticatorStatusByType(MarkAuthenticationType.BIOMETRIC_WEAK)
@@ -192,15 +193,15 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun checkSecureAuthentication(): MarkAuthenticationStatus {
+    override fun checkSecureAuthentication(): MarkAuthenticationStatus {
         return checkAuthenticatorStatusByType(MarkAuthenticationType.BIOMETRIC_STRONG)
     }
 
-    fun canAuthenticate(method: MarkAuthenticatorMethod): Boolean {
+    override fun canAuthenticate(method: MarkAuthenticatorMethod): Boolean {
         return checkAuthenticatorStatus(method) == MarkAuthenticationStatus.SUCCESS
     }
 
-    fun authenticateDeviceCredential(
+    override fun authenticateDeviceCredential(
         activity: FragmentActivity,
         title: String,
         subTitle: String?,
@@ -236,7 +237,7 @@ internal class MarkAuthenticatorInternal(
         )
     }
 
-    fun authenticateBiometric(
+    override fun authenticateBiometric(
         activity: FragmentActivity,
         title: String,
         subTitle: String?,
@@ -273,7 +274,7 @@ internal class MarkAuthenticatorInternal(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun isBiometricChanged(alias: String): Boolean {
+    override fun isBiometricChanged(alias: String): Boolean {
         return try {
             val secretKey = getSecretKey(alias) ?: return false
             val encryptCipher = cipher()
@@ -293,7 +294,7 @@ internal class MarkAuthenticatorInternal(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun secureAuthenticateBiometricEncrypt(
+    override fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         alias: String,
         title: String,
@@ -320,7 +321,7 @@ internal class MarkAuthenticatorInternal(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun secureAuthenticateBiometricEncrypt(
+    override fun secureAuthenticateBiometricEncrypt(
         activity: FragmentActivity,
         title: String,
         cipher: Cipher,
@@ -390,7 +391,7 @@ internal class MarkAuthenticatorInternal(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun secureAuthenticateBiometricDecrypt(
+    override fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         alias: String,
         encodedIVKey: String,
@@ -420,7 +421,7 @@ internal class MarkAuthenticatorInternal(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun secureAuthenticateBiometricDecrypt(
+    override fun secureAuthenticateBiometricDecrypt(
         activity: FragmentActivity,
         encodedIVKey: String,
         cipher: Cipher,
@@ -510,11 +511,11 @@ internal class MarkAuthenticatorInternal(
         )
     }
 
-    fun encrypt(cipher: Cipher, plainText: String): String {
+    override fun encrypt(cipher: Cipher, plainText: String): String {
         return base64DataSource.encode(cipher.doFinal(plainText.toByteArray(StandardCharsets.UTF_8)))
     }
 
-    fun decrypt(cipher: Cipher, encryptedText: ByteArray): String {
+    override fun decrypt(cipher: Cipher, encryptedText: ByteArray): String {
         return try {
             String(cipher.doFinal(encryptedText), StandardCharsets.UTF_8)
         } catch (e: BadPaddingException) {
@@ -526,7 +527,7 @@ internal class MarkAuthenticatorInternal(
         }
     }
 
-    fun decrypt(cipher: Cipher, encryptedText: String): String {
+    override fun decrypt(cipher: Cipher, encryptedText: String): String {
         return decrypt(cipher, base64DataSource.decode(encryptedText))
     }
 }

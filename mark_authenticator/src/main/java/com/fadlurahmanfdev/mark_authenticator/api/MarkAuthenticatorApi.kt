@@ -16,13 +16,6 @@ import javax.crypto.SecretKey
  */
 interface MarkAuthenticatorApi {
     /**
-     * Gets a secret key from Android KeyStore by [alias].
-     *
-     * @return existing key, or `null` when no key is stored for [alias].
-     */
-    fun getSecretKey(alias: String): SecretKey?
-
-    /**
      * Generates a new secret key in Android KeyStore.
      *
      * @param alias unique key identifier.
