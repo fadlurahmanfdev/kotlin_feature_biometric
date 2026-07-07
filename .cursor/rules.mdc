@@ -17,9 +17,10 @@ Rules:
 - Add KDoc or comment for every public API or public Model used by Consumer
 - use simple name for function or API or Model that easily remember (or prefer use my function name)
 - exception have a minimal variable for code:String, message:String, cause:Throwable
-- Library have a directory structure (api, core, internal)
-- api depends on core & internal
-- internal depends on core
+- Library have a directory structure (api, core, domain, internal)
+- api depends on core, domain & internal
+- internal depends on core, domain
+- core, domain are independent
 
 Documentation:
 - use README.md as a file to provide documentation
