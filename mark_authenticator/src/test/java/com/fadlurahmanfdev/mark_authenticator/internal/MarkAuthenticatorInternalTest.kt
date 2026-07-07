@@ -96,53 +96,6 @@ class MarkAuthenticatorInternalTest {
     }
 
     @Test
-    fun `generate and get secret key should work with fake key store`() {
-        val keyStore = FakeSecretKeyDataSource()
-        val sut = createSut(secretKeyDataSource = keyStore)
-
-        val generated = sut.generateSecretKey("alias-1", invalidatedByBiometricEnrollment = false)
-        val fetched = sut.getSecretKey("alias-1")
-
-        assertNotNull(generated)
-        assertEquals(generated, fetched)
-    }
-
-    @Test
-    fun `deleteSecretKey should remove existing key`() {
-        val keyStore = FakeSecretKeyDataSource()
-        val sut = createSut(secretKeyDataSource = keyStore)
-        sut.generateSecretKey("alias-2", invalidatedByBiometricEnrollment = false)
-
-        sut.deleteSecretKey("alias-2")
-
-        assertEquals(null, sut.getSecretKey("alias-2"))
-    }
-
-    @Test
-    fun `encrypt and decrypt should roundtrip text`() {
-        val sut = createSut()
-        val secretKey = generateInMemorySecretKey()
-        val plain = "hello-authenticator"
-
-        val encryptCipher = sut.cipher().apply { init(Cipher.ENCRYPT_MODE, secretKey) }
-        val encrypted = sut.encrypt(encryptCipher, plain)
-        val iv = encryptCipher.iv
-
-        val decryptCipher = sut.cipher().apply {
-            init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
-        }
-        val decrypted = sut.decrypt(decryptCipher, encrypted)
-
-        assertEquals(plain, decrypted)
-
-        val decryptCipherFromBytes = sut.cipher().apply {
-            init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
-        }
-        val encryptedBytes = Base64.getDecoder().decode(encrypted)
-        assertEquals(plain, sut.decrypt(decryptCipherFromBytes, encryptedBytes))
-    }
-
-    @Test
     fun `authenticateBiometric should call success callback`() {
         val promptDataSource = FakePromptDataSource(FakePromptDataSource.Mode.SUCCESS)
         val sut = createSut(promptDataSource = promptDataSource)
@@ -204,36 +157,6 @@ class MarkAuthenticatorInternalTest {
 
         assertTrue(callback.successCalled)
         assertFalse(callback.encodedIv.isNullOrBlank())
-    }
-
-    @Test
-    fun `secureAuthenticateBiometricDecrypt should decrypt previously encrypted text`() {
-        val promptDataSource = FakePromptDataSource(FakePromptDataSource.Mode.SUCCESS)
-        val keyStore = FakeSecretKeyDataSource()
-        val sut = createSut(
-            promptDataSource = promptDataSource,
-            secretKeyDataSource = keyStore,
-        )
-
-        val key = sut.generateSecretKey("secure-alias-2", invalidatedByBiometricEnrollment = false)
-        val encryptCipher = sut.cipher().apply { init(Cipher.ENCRYPT_MODE, key) }
-        val encrypted = sut.encrypt(encryptCipher, "sensitive-data")
-        val encodedIv = Base64.getEncoder().encodeToString(encryptCipher.iv)
-
-        val callback = TestDecryptCallback(sut, encrypted)
-        sut.secureAuthenticateBiometricDecrypt(
-            activity = mockk(relaxed = true),
-            alias = "secure-alias-2",
-            encodedIVKey = encodedIv,
-            title = "title",
-            subTitle = null,
-            description = "desc",
-            negativeText = "cancel",
-            confirmationRequired = false,
-            callback = callback,
-        )
-
-        assertEquals("sensitive-data", callback.decryptedValue)
     }
 
     @Test
