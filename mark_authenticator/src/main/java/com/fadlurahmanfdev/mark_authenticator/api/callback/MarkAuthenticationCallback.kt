@@ -12,9 +12,7 @@ interface MarkAuthenticationCallback {
      */
     fun onFailedAuthenticate()
 
-    /**
-     * Called when authentication flow fails with a concrete error.
-     */
+    /** Called when authentication flow fails with a concrete error code and message. */
     fun onErrorAuthenticate(exception: MarkAuthenticatorException)
 
     /**

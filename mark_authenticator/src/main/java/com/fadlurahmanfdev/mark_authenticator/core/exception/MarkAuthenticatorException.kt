@@ -3,8 +3,12 @@ package com.fadlurahmanfdev.mark_authenticator.core.exception
 /**
  * Domain exception exposed to consumer applications.
  *
- * @property code machine-readable error code.
- * @property message human-readable error message.
+ * All public APIs return errors by this type so callers can reliably handle failures with
+ * [code], while still receiving a readable [message] and optional original [cause].
+ *
+ * @property code machine-readable error code
+ * (for example values from [com.fadlurahmanfdev.mark_authenticator.core.constant.ErrorConstant]).
+ * @property message human-readable description from platform or library.
  * @property cause underlying throwable when available.
  */
 data class MarkAuthenticatorException(
