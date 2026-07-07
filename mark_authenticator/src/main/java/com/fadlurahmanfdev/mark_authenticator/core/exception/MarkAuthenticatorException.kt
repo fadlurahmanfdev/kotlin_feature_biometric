@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.mark_authenticator.enums
+package com.fadlurahmanfdev.mark_authenticator.core.exception
 
 /**
  * Domain exception exposed to consumer applications.

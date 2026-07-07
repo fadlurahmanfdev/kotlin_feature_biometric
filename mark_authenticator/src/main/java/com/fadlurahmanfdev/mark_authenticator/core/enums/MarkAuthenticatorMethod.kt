@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.mark_authenticator.enums
+package com.fadlurahmanfdev.mark_authenticator.core.enums
 
 /**
  * Authentication methods supported by Mark Authenticator.

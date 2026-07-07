@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.mark_authenticator.enums
+package com.fadlurahmanfdev.mark_authenticator.core.enums
 
 /**
  * Normalized authentication capability states.

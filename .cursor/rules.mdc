@@ -10,26 +10,16 @@ Library Capabilities
 - Check whether device biometric changes while decrypting data
 - Encrypt data through biometric authentication cryptography key
 
-Architecture:
-- Use clean architecture when applicable
-- use SOLID principle
-- Keep library is testable for unit test, please using Test Driven Development
-- Keep code testable
-
 Rules:
-- Keep API can use in SDK >= 21
+- Use clean architecture & SOLID principle
+- use SOLID principle
+- Use human readable or easy to remember name function for API function
 - Add KDoc or comment for every public API or public Model used by Consumer
 - use simple name for function or API or Model that easily remember (or prefer use my function name)
 - exception have a minimal variable for code:String, message:String, cause:Throwable
-- model & core depends on nothing
-- api depends on model and core
-- internal depends on api, model, and core
-
-Library Directory Structure:
-- model
-- core
-- api
-- internal
+- Library have a directory structure (api, core, internal)
+- api depends on core & internal
+- internal depends on core
 
 Documentation:
 - use README.md as a file to provide documentation
@@ -39,9 +29,6 @@ Example:
 - app/ folder is for example how to use this library
 - in app/ there is one selection feature activity that will simulate flow of this app
 - Instead just Log the result, display the result into textview
-
-Versioning:
-- do not change versioning
 
 CI/CD:
 - Use Github Workflow under .github/workflows

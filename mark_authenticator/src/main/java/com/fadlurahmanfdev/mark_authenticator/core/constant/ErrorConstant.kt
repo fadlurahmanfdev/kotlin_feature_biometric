@@ -1,7 +1,7 @@
 package com.fadlurahmanfdev.mark_authenticator.core.constant
 
 /**
- * Error codes returned by [com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException].
+ * Error codes returned by [com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException].
  */
 object ErrorConstant {
     const val CIPHER_MISSING = "CIPHER_MISSING"

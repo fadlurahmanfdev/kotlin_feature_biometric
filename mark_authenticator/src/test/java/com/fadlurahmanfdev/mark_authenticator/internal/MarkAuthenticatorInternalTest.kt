@@ -13,8 +13,9 @@ import com.fadlurahmanfdev.mark_authenticator.internal.dependency.DeviceCapabili
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptDataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.PromptRequest
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.SecretKeyDataSource
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -259,7 +260,7 @@ class MarkAuthenticatorInternalTest {
                 callback = callback,
             )
         } catch (e: Throwable) {
-            assertEquals(ErrorConstant.SECRET_KEY_MISSING, (e as com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException).code)
+            assertEquals(ErrorConstant.SECRET_KEY_MISSING, (e as MarkAuthenticatorException).code)
         }
     }
 
@@ -366,7 +367,7 @@ private class TestWeakCallback : WeakAuthenticationCallback {
         failedCalled = true
     }
 
-    override fun onErrorAuthenticate(exception: com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException) {
+    override fun onErrorAuthenticate(exception: MarkAuthenticatorException) {
         errorCode = exception.code
     }
 
@@ -386,7 +387,7 @@ private class TestEncryptCallback : SecureAuthenticationEncryptCallback {
 
     override fun onFailedAuthenticate() = Unit
 
-    override fun onErrorAuthenticate(exception: com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException) = Unit
+    override fun onErrorAuthenticate(exception: MarkAuthenticatorException) = Unit
 }
 
 private class TestDecryptCallback(
@@ -401,5 +402,5 @@ private class TestDecryptCallback(
 
     override fun onFailedAuthenticate() = Unit
 
-    override fun onErrorAuthenticate(exception: com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException) = Unit
+    override fun onErrorAuthenticate(exception: MarkAuthenticatorException) = Unit
 }

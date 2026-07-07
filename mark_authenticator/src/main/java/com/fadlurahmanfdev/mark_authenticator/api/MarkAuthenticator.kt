@@ -11,8 +11,8 @@ import com.fadlurahmanfdev.mark_authenticator.internal.dependency.AndroidDeviceC
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.AndroidPromptDataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.AndroidSecretKeyDataSource
 import com.fadlurahmanfdev.mark_authenticator.internal.dependency.DefaultCipherDataSource
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticationStatus
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticationStatus
+import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 

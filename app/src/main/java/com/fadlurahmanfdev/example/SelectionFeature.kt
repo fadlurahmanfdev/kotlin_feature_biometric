@@ -14,8 +14,8 @@ import com.fadlurahmanfdev.mark_authenticator.api.MarkAuthenticator
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException
-import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.core.exception.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.core.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 
 /**
