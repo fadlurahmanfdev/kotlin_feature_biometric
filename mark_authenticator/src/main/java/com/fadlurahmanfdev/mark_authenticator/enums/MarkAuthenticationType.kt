@@ -1,4 +1,4 @@
-package com.fadlurahmanfdev.mark_authenticator.internal.model
+package com.fadlurahmanfdev.mark_authenticator.enums
 
 internal enum class MarkAuthenticationType {
     BIOMETRIC_WEAK,

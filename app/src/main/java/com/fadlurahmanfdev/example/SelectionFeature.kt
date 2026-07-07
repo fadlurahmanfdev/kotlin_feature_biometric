@@ -10,12 +10,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.fadlurahmanfdev.example.data.FeatureAction
 import com.fadlurahmanfdev.example.data.FeatureModel
 import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
-import com.fadlurahmanfdev.mark_authenticator.MarkAuthenticator
+import com.fadlurahmanfdev.mark_authenticator.api.MarkAuthenticator
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
 import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.model.MarkAuthenticatorException
-import com.fadlurahmanfdev.mark_authenticator.model.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 
 /**

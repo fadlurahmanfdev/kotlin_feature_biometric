@@ -1,6 +1,6 @@
 package com.fadlurahmanfdev.mark_authenticator.api.callback
 
-import com.fadlurahmanfdev.mark_authenticator.model.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_authenticator.enums.MarkAuthenticatorException
 import javax.crypto.Cipher
 
 /**
