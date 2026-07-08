@@ -1,3 +1,6 @@
 <resources>
-    <string name="app_name">Kotlin Feature Biometric</string>
+    <string name="app_name">Mark Biometric Sample</string>
+    <string name="sample_title">Mark Biometric Playground</string>
+    <string name="sample_subtitle">Tap any item to simulate the library behavior in this app.</string>
+    <string name="latest_result">Latest Result</string>
 </resources>

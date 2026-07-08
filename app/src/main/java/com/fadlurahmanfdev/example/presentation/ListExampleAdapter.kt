@@ -3,14 +3,13 @@ package com.fadlurahmanfdev.example.presentation
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.fadlurahmanfdev.example.R
 import com.fadlurahmanfdev.example.data.FeatureModel
 
 class ListExampleAdapter : RecyclerView.Adapter<ListExampleAdapter.ViewHolder>() {
-    val items: ArrayList<FeatureModel> = arrayListOf()
+    private val items: ArrayList<FeatureModel> = arrayListOf()
     private lateinit var callback: Callback
 
     fun setCallback(callback: Callback) {
@@ -18,15 +17,19 @@ class ListExampleAdapter : RecyclerView.Adapter<ListExampleAdapter.ViewHolder>()
     }
 
     fun setList(items: List<FeatureModel>) {
+        val previousSize = this.items.size
         this.items.clear()
         this.items.addAll(items)
+        if (previousSize > 0) {
+            notifyItemRangeRemoved(0, previousSize)
+        }
         notifyItemRangeInserted(0, items.size)
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val title: TextView = view.findViewById(R.id.tvFeatureTitle)
         val desc: TextView = view.findViewById(R.id.tvFeatureDesc)
-        val main: LinearLayout = view.findViewById(R.id.llMain)
+        val main: View = view.findViewById(R.id.llMain)
 
         init {
             main.setOnClickListener {
@@ -50,7 +53,7 @@ class ListExampleAdapter : RecyclerView.Adapter<ListExampleAdapter.ViewHolder>()
         val item = items[position]
 
         holder.title.text = item.title
-        holder.desc.text = item.desc ?: "-"
+        holder.desc.text = item.description
     }
 
     interface Callback {

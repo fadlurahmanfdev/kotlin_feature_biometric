@@ -1,0 +1,50 @@
+Project Description
+
+- Android Kotlin Library for Handling Biometric Authentication
+
+Library Capabilities
+- Check whether device support fingerprint, face authentication, or any biometric
+- Check whether device already enrolled the biometric (fingerprint, face auth, or etc)
+- Check whether device credential enrolled
+- Check whether current device state support strong biometric authentication using cryptography
+- Check whether device biometric changes while decrypting data
+- Encrypt data through biometric authentication cryptography key
+
+Rules:
+- Use clean architecture & SOLID principle
+- use SOLID principle
+- Use human readable or easy to remember name function for API function
+- Add KDoc or comment for every public API or public Model used by Consumer
+- use simple name for function or API or Model that easily remember (or prefer use my function name)
+- exception have a minimal variable for code:String, message:String, cause:Throwable
+- Library have a directory structure (api, core, domain, internal)
+- api depends on core, domain & internal
+- internal depends on core, domain
+- core, domain are independent
+
+Documentation:
+- use README.md as a file to provide documentation
+- Every public Class/API/Model needs documentation
+
+Example:
+- app/ folder is for example how to use this library
+- in app/ there is one selection feature activity that will simulate flow of this app
+- Instead just Log the result, display the result into textview
+
+CI/CD:
+- Use Github Workflow under .github/workflows
+- Use existing variable or secret
+- Ensure should doing testing every PR to main or push inside main
+- Ensure for deploying to maven central after tag using "v*"
+- for deployment, test -> deployment -> create release
+- list commit from current tag to previous tag as a release note (if applicable) or add last 10 commit as a release note (if applicable)
+
+Agent Instructions:
+- Ensure backward compatibility
+- Do not generate placeholder implementations
+- Do not generate fake/mock production logic
+- Ask before introducing breaking changes
+- Prefer scalable and maintainable solutions
+- Follow existing repository patterns first
+- Update README.md documentation if there is any update on public API or Model
+- Update androidTest or Test if there is any update on library implementation
