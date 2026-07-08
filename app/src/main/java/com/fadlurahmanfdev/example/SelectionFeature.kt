@@ -11,16 +11,16 @@ import androidx.recyclerview.widget.RecyclerView
 import com.fadlurahmanfdev.example.data.FeatureAction
 import com.fadlurahmanfdev.example.data.FeatureModel
 import com.fadlurahmanfdev.example.presentation.ListExampleAdapter
-import com.fadlurahmanfdev.mark_authenticator.api.MarkAuthenticator
-import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationDecryptCallback
-import com.fadlurahmanfdev.mark_authenticator.api.callback.SecureAuthenticationEncryptCallback
-import com.fadlurahmanfdev.mark_authenticator.api.callback.WeakAuthenticationCallback
-import com.fadlurahmanfdev.mark_authenticator.domain.exception.MarkAuthenticatorException
-import com.fadlurahmanfdev.mark_authenticator.domain.enums.MarkAuthenticatorMethod
+import com.fadlurahmanfdev.mark_biometric.api.MarkAuthenticator
+import com.fadlurahmanfdev.mark_biometric.api.callback.SecureAuthenticationDecryptCallback
+import com.fadlurahmanfdev.mark_biometric.api.callback.SecureAuthenticationEncryptCallback
+import com.fadlurahmanfdev.mark_biometric.api.callback.WeakAuthenticationCallback
+import com.fadlurahmanfdev.mark_biometric.domain.exception.MarkAuthenticatorException
+import com.fadlurahmanfdev.mark_biometric.domain.enums.MarkAuthenticatorMethod
 import javax.crypto.Cipher
 
 /**
- * Sample activity used to simulate each supported Mark Authenticator flow.
+ * Sample activity used to simulate each supported Mark Biometric flow.
  */
 class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
     private lateinit var markAuthenticator: MarkAuthenticator
@@ -29,7 +29,7 @@ class SelectionFeature : AppCompatActivity(), ListExampleAdapter.Callback {
     private var encryptedText: String? = null
     private var encodedIvKey: String? = null
 
-    private val alias = "sample_mark_authenticator_alias"
+    private val alias = "sample_mark_biometric_alias"
     private val plainText = "PASSW0RD"
 
     private val featureItems = listOf(

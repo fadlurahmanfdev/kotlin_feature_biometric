@@ -1,6 +1,6 @@
-# Mark Authenticator
+# Mark Biometric
 
-Mark Authenticator is an Android Kotlin library for biometric and device-credential authentication.
+Mark Biometric is an Android Kotlin library for biometric and device-credential authentication.
 It also provides secure AES/GCM encryption/decryption helpers backed by Android KeyStore.
 
 ## Installation
@@ -9,7 +9,7 @@ Add your dependency as usual:
 
 ```kotlin
 dependencies {
-    implementation("com.fadlurahmanfdev:mark_authenticator:<version>")
+    implementation("com.fadlurahmanfdev:mark_biometric:<version>")
 }
 ```
 

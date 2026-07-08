@@ -48,4 +48,4 @@ jobs:
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
           echo "---------------------------||---------------------------"
-          ./gradlew :mark_authenticator:publishMavenPublicationToMavenCentralRepository
+          ./gradlew :mark_biometric:publishMavenPublicationToMavenCentralRepository

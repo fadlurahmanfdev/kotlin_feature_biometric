@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Mark Authenticator"
+rootProject.name = "Mark Biometric"
 include(":app")
-include(":mark_authenticator")
+include(":mark_biometric")
